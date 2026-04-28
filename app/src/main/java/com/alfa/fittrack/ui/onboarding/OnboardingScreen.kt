@@ -15,9 +15,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.alfa.fittrack.R
+import com.alfa.fittrack.ui.profile.ProfileScreen
 import com.alfa.fittrack.ui.theme.PrimaryColor
 
 @Composable
@@ -100,4 +102,13 @@ fun OnboardingScreen(
             }
         }
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun OnboardingScreenPreview() {
+    OnboardingScreen(
+        onNavigateToLogin = {},
+        onNavigateToRegister = {}
+    )
 }
