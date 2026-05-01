@@ -1,4 +1,4 @@
-package com.alfa.fittrack.ui.screens.admin
+package com.aplikasi.fittrack.ui.screens.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

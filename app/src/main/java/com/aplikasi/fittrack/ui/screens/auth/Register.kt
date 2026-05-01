@@ -1,4 +1,4 @@
-package com.alfa.fittrack.ui.screens.auth
+package com.aplikasi.fittrack.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

@@ -1,4 +1,4 @@
-package com.alfa.fittrack.ui.profile
+package com.aplikasi.fittrack.ui.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

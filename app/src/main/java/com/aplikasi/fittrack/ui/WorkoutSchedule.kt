@@ -1,4 +1,4 @@
-package com.alfa.fittrack.ui
+package com.aplikasi.fittrack.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

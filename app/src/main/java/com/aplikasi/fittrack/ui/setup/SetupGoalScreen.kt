@@ -1,4 +1,4 @@
-package com.alfa.fittrack.ui.setup
+package com.aplikasi.fittrack.ui.setup
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

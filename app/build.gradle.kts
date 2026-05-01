@@ -5,13 +5,13 @@ plugins {
 }
 
 android {
-    namespace = "com.alfa.fittrack"
+    namespace = "com.aplikasi.fittrack"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.alfa.fittrack"
+        applicationId = "com.com.aplikasi.fittrack"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.alfa.fittrack
+package com.aplikasi.fittrack
 
 import org.junit.Test
 
