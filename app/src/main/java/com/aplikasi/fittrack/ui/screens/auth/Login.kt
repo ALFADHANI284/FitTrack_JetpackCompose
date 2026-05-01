@@ -19,15 +19,22 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.model.LoginRequest
+import com.aplikasi.fittrack.network.RetrofitClient
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen() {
-    // STATE: Ini seperti ref() di Vue. Menyimpan apa yang diketik user.
+    // 1. STATE: Untuk API
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) } // State loading ala Vue
+    var loginResult by remember { mutableStateOf<String?>(null) } // Pesan sukses/error
 
-    // Box Utama (Mewakili Constraint Layout)
+    // 2. SCOPE: Buat ngejalanin fungsi suspend (asynchronous)
+    val coroutineScope = rememberCoroutineScope()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -41,10 +48,9 @@ fun LoginScreen() {
                 .background(Color(0xFFFFC107))
         )
 
-        // 2. Logo Aplikasi (Posisinya di atas tengah)
-        // Ganti R.drawable.ic_launcher_foreground dengan logo_ft_bg aslimu nanti
+        // 2. Logo Aplikasi
         Image(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera), // Placeholder logo
+            painter = painterResource(id = android.R.drawable.ic_menu_camera),
             contentDescription = "App Logo",
             contentScale = ContentScale.Fit,
             modifier = Modifier
@@ -53,7 +59,7 @@ fun LoginScreen() {
                 .padding(top = 40.dp)
         )
 
-        // 3. Card Putih Melengkung (Mulai dari 180dp dari atas supaya menumpuk kuningnya)
+        // 3. Card Putih Melengkung
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -69,19 +75,29 @@ fun LoginScreen() {
                     .padding(25.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Judul Login
+                // Teks Judul
                 Text(
                     text = "Login",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black,
-                    modifier = Modifier.padding(top = 20.dp, bottom = 30.dp)
+                    modifier = Modifier.padding(top = 20.dp, bottom = 10.dp) // Bottom dikurangi dikit
                 )
+
+                // 3. Pesan error/sukses di bawah judul
+                loginResult?.let { message ->
+                    Text(
+                        text = message,
+                        color = if (message.startsWith("Gagal")) Color.Red else Color(0xFF4CAF50),
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
 
                 // Input Email
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it }, // Update state saat ngetik
+                    onValueChange = { email = it },
                     label = { Text("Email") },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,9 +109,9 @@ fun LoginScreen() {
                 // Input Password
                 OutlinedTextField(
                     value = password,
-                    onValueChange = { password = it }, // Update state saat ngetik
+                    onValueChange = { password = it },
                     label = { Text("Password") },
-                    visualTransformation = PasswordVisualTransformation(), // Menyamarkan teks jadi titik-titik
+                    visualTransformation = PasswordVisualTransformation(),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 30.dp),
@@ -103,17 +119,45 @@ fun LoginScreen() {
                     shape = RoundedCornerShape(12.dp)
                 )
 
-                // Tombol Login Biasa
+                // 4. TOMBOL LOGIN
                 Button(
-                    onClick = { /* TODO: Proses Login */ },
+                    // Logika ke API Laravel
+                    onClick = {
+                        if (email.isNotBlank() && password.isNotBlank()) {
+                            isLoading = true
+                            loginResult = null
+                            coroutineScope.launch {
+                                try {
+                                    // Panggil API
+                                    val request = LoginRequest(email, password)
+                                    val response = RetrofitClient.instance.loginUser(request)
+
+                                    loginResult = "Sukses! Token: ${response.token}"
+                                    // TODO: Nanti tokennya disimpen ke SharedPreferences/DataStore di sini
+                                } catch (e: Exception) {
+                                    loginResult = "Gagal: Email/Password salah atau server mati"
+                                } finally {
+                                    isLoading = false
+                                }
+                            }
+                        } else {
+                            loginResult = "Gagal: Email dan Password wajib diisi!"
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(55.dp)
                         .padding(bottom = 25.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107)),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isLoading
                 ) {
-                    Text("Login", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    // Ganti teks jadi loading spinner kalau lagi request API
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Login", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
 
                 // Tombol Login Google
@@ -126,9 +170,8 @@ fun LoginScreen() {
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF0000)),
                     shape = RoundedCornerShape(80.dp)
                 ) {
-                    // Gunakan Icon + Spacer + Text supaya rapi
                     Icon(
-                        painter = painterResource(id = android.R.drawable.ic_dialog_email), // Placeholder icon
+                        painter = painterResource(id = android.R.drawable.ic_dialog_email),
                         contentDescription = "Google Icon",
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
