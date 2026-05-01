@@ -36,21 +36,27 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // State untuk ngatur halaman apa yang lagi dibuka
-            // Defaultnya kita buka Register dulu buat ngetes
-            var currentScreen by remember { mutableStateOf("register") }
+            // Defaultnya buka login dulu
+            var currentScreen by remember { mutableStateOf("login") }
 
             when (currentScreen) {
                 "login" -> {
-                    LoginScreen() // Pastikan LoginScreen lu ga butuh parameter, atau sesuaikan
+                    LoginScreen(
+                        onNavigateToHome = { currentScreen = "home" },
+                        onNavigateToRegister = { currentScreen = "register" }
+                    )
                 }
                 "register" -> {
                     RegisterScreen(
-                        onNavigateToLogin = {
-                            // Kalau fungsi ini dipanggil, ganti state jadi "login"
-                            currentScreen = "login"
-                        }
+                        onNavigateToLogin = { currentScreen = "login" }
                     )
+                }
+                "home" -> {
+                    // Ini halaman sementaranya.
+
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Selamat Datang di FitTrack!", fontSize = 24.sp)
+                    }
                 }
             }
         }
