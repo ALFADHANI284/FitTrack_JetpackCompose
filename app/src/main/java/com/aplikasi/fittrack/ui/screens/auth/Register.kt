@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -24,28 +26,36 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.model.RegisterRequest
+import com.aplikasi.fittrack.network.RetrofitClient
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RegisterScreen() {
-    // STATE: Menyimpan inputan user
+fun RegisterScreen(onNavigateToLogin: () -> Unit) {
+    // 1. STATE INPUT: Menyimpan ketikan user
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    // STATE: Untuk toggle hide/show password
+    // 2. STATE UI: Untuk toggle password dan loading API
     var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) } // State animasi loading
+    var registerMessage by remember { mutableStateOf<String?>(null) } // Pesan sukses/gagal
+
+    // 3. COROUTINE SCOPE: Wajib ada buat manggil API (suspend function)
+    val coroutineScope = rememberCoroutineScope()
 
     val yellowTheme = Color(0xFFFFB300)
-
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        // 1. Background Kuning Atas (Header)
+        // --- HEADER KUNING ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -54,19 +64,17 @@ fun RegisterScreen() {
                 .padding(top = 40.dp, start = 16.dp, end = 16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Tombol Back
                 Icon(
                     imageVector = Icons.Default.ArrowBack,
                     contentDescription = "Back",
                     tint = Color.Black,
                     modifier = Modifier
                         .size(28.dp)
-                        .clickable { /* TODO: Navigasi Back */ }
+                        .clickable { /* TODO: Navigasi Back ke Login */ }
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-                // Judul
                 Text(
-                    text = "Sign Up",
+                    text = "Register",
                     fontSize = 28.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black
@@ -74,12 +82,12 @@ fun RegisterScreen() {
             }
         }
 
-        // 2. Card Putih Utama (Tempat Form)
+        // --- CARD PUTIH UTAMA ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight()
-                .padding(top = 120.dp), // Dibuat overlap dengan kuningnya
+                .padding(top = 120.dp),
             shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -87,7 +95,7 @@ fun RegisterScreen() {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState()) // Biar aman kalau keyboard muncul
+                    .verticalScroll(rememberScrollState())
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -96,11 +104,22 @@ fun RegisterScreen() {
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
-                        .padding(bottom = 24.dp)
+                        .padding(bottom = 16.dp) // Dikurangi dikit jaraknya biar pas buat pesan error
                         .align(Alignment.Start)
                 )
 
-                // Custom warna TextField biar lebih tegas (Bold Outline)
+                // 4. PESAN ERROR/SUKSES: Tampil di bawah judul
+                registerMessage?.let { message ->
+                    Text(
+                        text = message,
+                        color = if (message.startsWith("Gagal")) Color.Red else Color(0xFF4CAF50),
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp)
+                    )
+                }
+
                 val textFieldColors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Black,
                     unfocusedBorderColor = Color.Gray,
@@ -108,7 +127,7 @@ fun RegisterScreen() {
                     cursorColor = yellowTheme
                 )
 
-                // First Name & Last Name (Bersebelahan dalam Row)
+                // --- FORM INPUT ---
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -117,7 +136,7 @@ fun RegisterScreen() {
                         value = firstName,
                         onValueChange = { firstName = it },
                         label = { Text("First Name") },
-                        modifier = Modifier.weight(1f), // Membagi lebar 50:50
+                        modifier = Modifier.weight(1f),
                         colors = textFieldColors,
                         shape = RoundedCornerShape(12.dp)
                     )
@@ -133,7 +152,6 @@ fun RegisterScreen() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Email
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -146,7 +164,6 @@ fun RegisterScreen() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Password dengan Toggle Mata
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -166,7 +183,6 @@ fun RegisterScreen() {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Confirm Password
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
@@ -180,32 +196,95 @@ fun RegisterScreen() {
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Tombol Sign Up (Gaya brutalist dengan border hitam)
+                // 5. TOMBOL REGISTER DENGAN LOGIKA API
                 Button(
-                    onClick = { /* TODO: Aksi Register */ },
+                    onClick = {
+                        // A. Validasi Confirm Password dulu di Android
+                        if (password != confirmPassword) {
+                            registerMessage = "Gagal: Password dan Confirm Password tidak sama!"
+                            return@Button // Stop proses
+                        }
+
+                        // B. Validasi inputan kosong
+                        if (firstName.isBlank() || email.isBlank() || password.isBlank()) {
+                            registerMessage = "Gagal: First Name, Email, dan Password wajib diisi!"
+                            return@Button // Stop proses
+                        }
+
+                        // C. Gabungkan First Name dan Last Name jadi satu String
+                        val fullName = "$firstName $lastName".trim()
+
+                        // D. Mulai proses tembak API
+                        isLoading = true
+                        registerMessage = null // Reset pesan error sebelumnya
+
+                        coroutineScope.launch {
+                            try {
+                                val request = RegisterRequest(
+                                    name = fullName,
+                                    email = email,
+                                    password = password
+                                )
+                                val response = RetrofitClient.instance.registerUser(request)
+
+                                // MUNCULIN NOTIF TOAST
+                                Toast.makeText(context, "Registrasi berhasil! Silakan login.", Toast.LENGTH_LONG).show()
+
+                                // PINDAH KE HALAMAN LOGIN
+                                onNavigateToLogin()
+
+                            } catch (e: retrofit2.HttpException) {
+                                // 1. Ambil body errornya
+                                val errorBody = e.response()?.errorBody()?.string()
+
+                                // 2. Coba bongkar JSON-nya
+                                val displayMessage = try {
+                                    val jsonObject = org.json.JSONObject(errorBody)
+                                    jsonObject.getString("message")
+                                } catch (parseException: Exception) {
+                                    "Terjadi kesalahan server (Kode: ${e.code()})"
+                                }
+
+                                registerMessage = "Gagal: $displayMessage"
+
+                            } catch (e: Exception) {
+                                registerMessage = "Gagal: Koneksi terputus atau server mati."
+                            } finally {
+                                isLoading = false
+                            }
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                         .border(2.dp, Color.Black, RoundedCornerShape(28.dp)),
                     colors = ButtonDefaults.buttonColors(containerColor = yellowTheme),
-                    shape = RoundedCornerShape(28.dp)
+                    shape = RoundedCornerShape(28.dp),
+                    enabled = !isLoading // Cegah user spam klik tombol
                 ) {
-                    Text("Sign Up", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                    // 6. GANTI TEKS JADI LOADING SPINNER KALAU LAGI PROSES
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text("Register", fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Link ke Sign In
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Already have an account? ", color = Color.Gray)
                     Text(
-                        text = "Sign In",
+                        text = "Login",
                         color = yellowTheme,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { /* TODO: Balik ke halaman Login */ }
+                        modifier = Modifier.clickable {
+                            // PINDAH KE HALAMAN LOGIN SAAT DIKLIK
+                            onNavigateToLogin()
+                        }
                     )
                 }
             }
@@ -216,5 +295,5 @@ fun RegisterScreen() {
 @Preview(showBackground = true)
 @Composable
 fun RegisterScreenPreview() {
-    RegisterScreen()
+    RegisterScreen(onNavigateToLogin = {})
 }
