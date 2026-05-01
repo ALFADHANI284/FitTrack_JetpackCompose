@@ -13,6 +13,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,13 +28,31 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
+import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            WorkoutTestScreen()
+            // State untuk ngatur halaman apa yang lagi dibuka
+            // Defaultnya kita buka Register dulu buat ngetes
+            var currentScreen by remember { mutableStateOf("register") }
+
+            when (currentScreen) {
+                "login" -> {
+                    LoginScreen() // Pastikan LoginScreen lu ga butuh parameter, atau sesuaikan
+                }
+                "register" -> {
+                    RegisterScreen(
+                        onNavigateToLogin = {
+                            // Kalau fungsi ini dipanggil, ganti state jadi "login"
+                            currentScreen = "login"
+                        }
+                    )
+                }
+            }
         }
     }
 }
