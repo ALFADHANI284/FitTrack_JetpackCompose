@@ -25,7 +25,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen() {
+fun LoginScreen(
+    onNavigateToHome: () -> Unit,
+    onNavigateToRegister: () -> Unit // Buat tombol Sign Up di bawah
+) {
     // 1. STATE: Untuk API
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -187,7 +190,7 @@ fun LoginScreen() {
                     fontSize = 13.sp,
                     modifier = Modifier
                         .padding(top = 16.dp)
-                        .clickable { /* TODO: Pindah ke halaman Register */ }
+                        .clickable { onNavigateToRegister() }
                 )
             }
         }
@@ -197,5 +200,8 @@ fun LoginScreen() {
 @Preview(showBackground = true)
 @Composable
 fun LoginScreenPreview() {
-    LoginScreen()
+    LoginScreen(
+        onNavigateToHome = {},
+        onNavigateToRegister = {}
+    )
 }
