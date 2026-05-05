@@ -2,9 +2,17 @@ package com.aplikasi.fittrack.ui.screens.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,7 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun AdminDashboardScreen() {
+fun AdminDashboardScreen(
+    onNavigateToAddWorkout: () -> Unit,
+    onLogout: () -> Unit
+) {
     // Warna primary_color (kamu bisa sesuaikan dengan hex warna aslimu)
     val primaryColor = Color(0xFFF5A300)
 
@@ -43,22 +54,14 @@ fun AdminDashboardScreen() {
             modifier = Modifier.padding(bottom = 40.dp)
         )
 
-        // Tombol Tambah Gerakan Latihan (Filled Button)
+        // 1. TOMBOL TAMBAH GERAKAN
         Button(
-            onClick = { /* TODO: Navigasi ke halaman tambah workout */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(bottom = 16.dp),
+            onClick = { onNavigateToAddWorkout() }, // <--- PANGGIL DI SINI
+            modifier = Modifier.fillMaxWidth().height(60.dp).padding(bottom = 16.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
         ) {
-            Text(
-                text = "Tambah Gerakan Latihan",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
+            Text("Tambah Gerakan Latihan", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
         }
 
         // Tombol Daftar Gerakan (Outlined Button)
@@ -83,22 +86,14 @@ fun AdminDashboardScreen() {
         // Fungsinya untuk mendorong elemen di bawahnya sampai ke dasar layar
         Spacer(modifier = Modifier.weight(1f))
 
-        // Tombol Keluar / Logout
+        // 2. TOMBOL LOGOUT
         Button(
-            onClick = { /* TODO: Proses logout admin */ },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(55.dp)
-                .padding(bottom = 16.dp),
+            onClick = { onLogout() }, // <--- PANGGIL DI SINI
+            modifier = Modifier.fillMaxWidth().height(55.dp).padding(bottom = 16.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEE)) // Merah pudar
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEE))
         ) {
-            Text(
-                text = "Keluar dari Mode Admin",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFD32F2F) // Merah tajam
-            )
+            Text("Keluar dari Mode Admin", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
         }
     }
 }
@@ -106,5 +101,5 @@ fun AdminDashboardScreen() {
 @Preview(showBackground = true)
 @Composable
 fun AdminDashboardPreview() {
-    AdminDashboardScreen()
+    AdminDashboardScreen(onNavigateToAddWorkout = {}, onLogout = {})
 }
