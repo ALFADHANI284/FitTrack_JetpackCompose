@@ -2,11 +2,13 @@ package com.aplikasi.fittrack.network
 
 import com.aplikasi.fittrack.model.AuthResponse
 import com.aplikasi.fittrack.model.BaseResponse
+import com.aplikasi.fittrack.model.DefaultResponse
 import com.aplikasi.fittrack.model.LoginRequest
 import com.aplikasi.fittrack.model.RegisterRequest
-import com.aplikasi.fittrack.model.WorkoutResponse
+import com.aplikasi.fittrack.model.WorkoutRequest
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface ApiService {
@@ -21,4 +23,10 @@ interface ApiService {
     // Endpoint untuk Register
     @POST("register")
     suspend fun registerUser(@Body registerRequest: RegisterRequest): AuthResponse
+    // Tambah Data Workout (Hanya Admin)
+    @POST("workouts")
+    suspend fun createWorkout(
+        @Header("Authorization") token: String, // <-- Wajib ada buat ngirim Bearer Token
+        @Body request: WorkoutRequest
+    ): DefaultResponse
 }
