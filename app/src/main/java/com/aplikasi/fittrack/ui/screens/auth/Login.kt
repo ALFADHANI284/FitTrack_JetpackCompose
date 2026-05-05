@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,11 +34,12 @@ fun LoginScreen(
     // 1. STATE: Untuk API
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var isLoading by remember { mutableStateOf(false) } // State loading ala Vue
+    var isLoading by remember { mutableStateOf(false) } // State loading
     var loginResult by remember { mutableStateOf<String?>(null) } // Pesan sukses/error
 
     // 2. SCOPE: Buat ngejalanin fungsi suspend (asynchronous)
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -131,13 +134,18 @@ fun LoginScreen(
                             loginResult = null
                             coroutineScope.launch {
                                 try {
-                                    // Panggil API
                                     val request = LoginRequest(email, password)
                                     val response = RetrofitClient.instance.loginUser(request)
 
-                                    loginResult = "Sukses! Token: ${response.token}"
-                                    // TODO: Nanti tokennya disimpen ke SharedPreferences/DataStore di sini
-                                } catch (e: Exception) {
+                                    // (Nanti response.token kita simpan di sini pakai SharedPreferences)
+
+                                    // Munculin Toast
+                                    Toast.makeText(context, "Login Berhasil!", Toast.LENGTH_SHORT).show()
+
+                                    // Pindah ke halaman Home/Dashboard
+                                    onNavigateToHome()
+
+                                } catch (e: retrofit2.HttpException) {
                                     loginResult = "Gagal: Email/Password salah atau server mati"
                                 } finally {
                                     isLoading = false
