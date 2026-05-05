@@ -8,5 +8,6 @@ data class AuthResponse(
     val user: UserData,
     @SerializedName("access_token")
     val token: String,
-    val token_type: String
+    val token_type: String,
+    val role: String?
 )
