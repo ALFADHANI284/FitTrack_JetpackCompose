@@ -5,13 +5,30 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,6 +45,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
+import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 
@@ -36,27 +55,44 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // Defaultnya buka login dulu
+            // State untuk mengatur perpindahan halaman
             var currentScreen by remember { mutableStateOf("login") }
 
             when (currentScreen) {
                 "login" -> {
                     LoginScreen(
                         onNavigateToHome = { currentScreen = "home" },
-                        onNavigateToRegister = { currentScreen = "register" }
+                        onNavigateToRegister = { currentScreen = "register" },
+                        onNavigateToAdmin = { currentScreen = "admin" } // Tambahkan rute admin
                     )
                 }
+
                 "register" -> {
                     RegisterScreen(
                         onNavigateToLogin = { currentScreen = "login" }
                     )
                 }
-                "home" -> {
-                    // Ini halaman sementaranya.
 
+                "home" -> {
+                    // Halaman untuk User Biasa
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Selamat Datang di FitTrack!", fontSize = 24.sp)
                     }
+                }
+
+                "admin" -> {
+                    // Halaman Dashboard Admin
+                    AdminDashboardScreen(
+                        onNavigateToAddWorkout = { currentScreen = "add_workout" },
+                        onLogout = { currentScreen = "login" }
+                    )
+                }
+
+                "add_workout" -> {
+                    // Halaman Form Tambah Workout
+                    AddWorkoutScreen(
+                        onNavigateBack = { currentScreen = "admin" }
+                    )
                 }
             }
         }
