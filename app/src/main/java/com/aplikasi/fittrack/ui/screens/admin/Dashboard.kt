@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AdminDashboardScreen(
     onNavigateToAddWorkout: () -> Unit,
+    onNavigateToWorkoutList: () -> Unit,
     onLogout: () -> Unit
 ) {
     // Warna primary_color (kamu bisa sesuaikan dengan hex warna aslimu)
@@ -66,7 +67,7 @@ fun AdminDashboardScreen(
 
         // Tombol Daftar Gerakan (Outlined Button)
         OutlinedButton(
-            onClick = { /* TODO: Navigasi ke list workout */ },
+            onClick = { onNavigateToWorkoutList() },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)
@@ -101,5 +102,5 @@ fun AdminDashboardScreen(
 @Preview(showBackground = true)
 @Composable
 fun AdminDashboardPreview() {
-    AdminDashboardScreen(onNavigateToAddWorkout = {}, onLogout = {})
+    AdminDashboardScreen(onNavigateToAddWorkout = {}, onLogout = {}, onNavigateToWorkoutList = {})
 }
