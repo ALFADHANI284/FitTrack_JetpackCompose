@@ -52,13 +52,13 @@ import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 
-class MainActivity : ComponentActivity() {
+
+class MainScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
-            // State untuk mengatur perpindahan halaman
-            var currentScreen by remember { mutableStateOf("login") }
+            var currentScreen by remember { mutableStateOf("onboarding") } // Buka onboarding pertama kali
 
             when (currentScreen) {
                 "onboarding" -> {
@@ -84,14 +84,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 "home" -> {
-                    // Halaman untuk User Biasa & Guest (Explore mode)
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Selamat Datang di FitTrack!", fontSize = 24.sp)
-                    }
+                    // 2. PANGGIL UI BARU LU DI SINI
+                    HomeScreen()
                 }
 
                 "admin" -> {
-                    // Halaman Dashboard Admin
                     AdminDashboardScreen(
                         onNavigateToAddWorkout = { currentScreen = "add_workout" },
                         onNavigateToWorkoutList = { currentScreen = "workout_list" },
@@ -100,7 +97,6 @@ class MainActivity : ComponentActivity() {
                 }
 
                 "add_workout" -> {
-                    // Halaman Form Tambah Workout
                     AddWorkoutScreen(
                         onNavigateBack = { currentScreen = "admin" }
                     )
@@ -110,28 +106,26 @@ class MainActivity : ComponentActivity() {
                     WorkoutListScreen(
                         onNavigateBack = { currentScreen = "admin" },
                         onNavigateToEdit = { id ->
-                            // Nanti kita arahin ke currentScreen = "edit_workout"
-                            // Sementara kasih Toast aja dulu biar tau ID-nya ketangkep
-                            android.widget.Toast.makeText(this@MainActivity, "Mau edit ID: $id", android.widget.Toast.LENGTH_SHORT).show()
+                            android.widget.Toast.makeText(this@MainScreen, "Mau edit ID: $id", android.widget.Toast.LENGTH_SHORT).show()
                         }
                     )
+                }
             }
         }
     }
 }
+
 @Composable
-fun MainScreen() {
-    // Scaffold menggantikan RelativeLayout untuk mengunci Bottom Navigation di bawah
+fun HomeScreen() {
     Scaffold(
         bottomBar = { CustomBottomNavigation() },
         containerColor = Color.White
     ) { paddingValues ->
-        // Column ini menggantikan ScrollView & LinearLayout utama
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues) // Mencegah konten tertutup Bottom Nav
-                .verticalScroll(rememberScrollState()) // Bikin bisa di-scroll
+                .padding(paddingValues)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
             // HEADER
@@ -201,7 +195,6 @@ fun MainScreen() {
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Pakai Box sebagai placeholder ImageView
                 Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
                 Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
                 Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
@@ -247,8 +240,7 @@ fun MainScreen() {
     }
 }
 
-// --- KOMPONEN BANTUAN --- (Supaya kode di atas tidak terlalu berantakan)
-
+// --- KOMPONEN BANTUAN ---
 @Composable
 fun SectionTitle(title: String, modifier: Modifier = Modifier) {
     Row(
@@ -304,9 +296,9 @@ fun NavItem(icon: ImageVector, label: String, color: Color) {
     }
 }
 
+// Preview
 @Preview(showBackground = true)
 @Composable
-fun MainScreenPreview() {
-    MainScreen()
+fun HomeScreenPreview() {
+    HomeScreen()
 }
-
