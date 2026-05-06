@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.ui.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
@@ -59,11 +60,19 @@ class MainActivity : ComponentActivity() {
             var currentScreen by remember { mutableStateOf("login") }
 
             when (currentScreen) {
+                "onboarding" -> {
+                    OnboardingScreen(
+                        onNavigateToLogin = { currentScreen = "login" },
+                        onNavigateToRegister = { currentScreen = "register" },
+                        onNavigateToHome = { currentScreen = "home" }
+                    )
+                }
+
                 "login" -> {
                     LoginScreen(
                         onNavigateToHome = { currentScreen = "home" },
                         onNavigateToRegister = { currentScreen = "register" },
-                        onNavigateToAdmin = { currentScreen = "admin" } // Tambahkan rute admin
+                        onNavigateToAdmin = { currentScreen = "admin" }
                     )
                 }
 
@@ -74,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 }
 
                 "home" -> {
-                    // Halaman untuk User Biasa
+                    // Halaman untuk User Biasa & Guest (Explore mode)
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Selamat Datang di FitTrack!", fontSize = 24.sp)
                     }
