@@ -2,7 +2,14 @@ package com.aplikasi.fittrack.ui.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -17,14 +24,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aplikasi.fittrack.ui.theme.PrimaryColor
 import com.aplikasi.fittrack.R
+import com.aplikasi.fittrack.ui.theme.PrimaryColor
 
 
 @Composable
 fun OnboardingScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToRegister: () -> Unit
+    onNavigateToRegister: () -> Unit,
+    onNavigateToHome: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -99,6 +107,16 @@ fun OnboardingScreen(
             ) {
                 Text(text = "Register", color = Color.White, fontSize = 16.sp)
             }
+            // Teks untuk navigasi ke halaman utama (Home), saat ingin eksplor terlebih dahulu
+            Text(
+                text = "I want to explore first",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = PrimaryColor,
+                modifier = Modifier
+                    .clickable { onNavigateToHome() }
+                    .padding(12.dp)
+            )
         }
     }
 }
@@ -108,6 +126,7 @@ fun OnboardingScreen(
 fun OnboardingScreenPreview() {
     OnboardingScreen(
         onNavigateToLogin = {},
-        onNavigateToRegister = {}
+        onNavigateToRegister = {},
+        onNavigateToHome = {}
     )
 }
