@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.ui.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
+import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 
@@ -93,6 +94,7 @@ class MainActivity : ComponentActivity() {
                     // Halaman Dashboard Admin
                     AdminDashboardScreen(
                         onNavigateToAddWorkout = { currentScreen = "add_workout" },
+                        onNavigateToWorkoutList = { currentScreen = "workout_list" },
                         onLogout = { currentScreen = "login" }
                     )
                 }
@@ -103,6 +105,16 @@ class MainActivity : ComponentActivity() {
                         onNavigateBack = { currentScreen = "admin" }
                     )
                 }
+
+                "workout_list" -> {
+                    WorkoutListScreen(
+                        onNavigateBack = { currentScreen = "admin" },
+                        onNavigateToEdit = { id ->
+                            // Nanti kita arahin ke currentScreen = "edit_workout"
+                            // Sementara kasih Toast aja dulu biar tau ID-nya ketangkep
+                            android.widget.Toast.makeText(this@MainActivity, "Mau edit ID: $id", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
             }
         }
     }
