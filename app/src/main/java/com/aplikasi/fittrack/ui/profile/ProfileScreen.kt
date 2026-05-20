@@ -1,12 +1,25 @@
 package com.aplikasi.fittrack.ui.profile
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,7 +54,7 @@ fun ProfileScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = "User FitTrack", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(text = "user@fittrack.com", fontSize = 14.sp, color = Color.Gray)
+        Text(text = "alfa@fittrack.com", fontSize = 14.sp, color = Color.Gray)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -71,7 +84,7 @@ fun ProfileScreen(
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Aktivitas Terakhir", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(text = "Aktivitas Terakhir kamu", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(12.dp))
 
                 // Contoh dummy data history olahraga
