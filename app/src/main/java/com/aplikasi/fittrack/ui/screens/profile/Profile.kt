@@ -1,4 +1,4 @@
-package com.aplikasi.fittrack.ui.profile
+package com.aplikasi.fittrack.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ProfileScreen(
-    onLogoutClick: () -> Unit // Parameter fungsi buat navigasi logout nanti
+    onLogoutClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -127,3 +127,4 @@ fun ProfileScreenPreview() {
         onLogoutClick = {}
     )
 }
+
