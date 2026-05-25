@@ -1,4 +1,4 @@
-package com.aplikasi.fittrack.ui.onboarding
+package com.aplikasi.fittrack.ui.screens.onboarding
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
