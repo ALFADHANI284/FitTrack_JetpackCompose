@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,12 +46,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aplikasi.fittrack.ui.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
+import com.aplikasi.fittrack.ui.screens.onboarding.OnboardingScreen
+import com.aplikasi.fittrack.ui.screens.profile.ProfileScreen
 
 
 class MainScreen : ComponentActivity() {
@@ -69,6 +71,7 @@ class MainScreen : ComponentActivity() {
                     )
                 }
 
+                // Login / masuk
                 "login" -> {
                     LoginScreen(
                         onNavigateToHome = { currentScreen = "home" },
@@ -76,18 +79,30 @@ class MainScreen : ComponentActivity() {
                         onNavigateToAdmin = { currentScreen = "admin" }
                     )
                 }
-
+                // Register / daftar
                 "register" -> {
                     RegisterScreen(
                         onNavigateToLogin = { currentScreen = "login" }
                     )
                 }
 
+                // Home
                 "home" -> {
-                    // 2. PANGGIL UI BARU LU DI SINI
-                    HomeScreen()
+                    HomeScreen(
+                        onNavigateToProfile = { currentScreen = "profile" }
+                    )
                 }
 
+                // Profile
+                "profile" -> {
+                    ProfileScreen(
+                        onLogoutClick = {
+                            currentScreen = "login" // Kalau logout, balik ke login!
+                        }
+                    )
+                }
+
+                // Admin
                 "admin" -> {
                     AdminDashboardScreen(
                         onNavigateToAddWorkout = { currentScreen = "add_workout" },
@@ -116,9 +131,13 @@ class MainScreen : ComponentActivity() {
 }
 
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    onNavigateToProfile: () -> Unit
+) {
     Scaffold(
-        bottomBar = { CustomBottomNavigation() },
+        bottomBar = { CustomBottomNavigation(
+            onNavigateToProfile = onNavigateToProfile
+        ) },
         containerColor = Color.White
     ) { paddingValues ->
         Column(
@@ -270,7 +289,9 @@ fun ChallengeCard(title: String) {
 }
 
 @Composable
-fun CustomBottomNavigation() {
+fun CustomBottomNavigation(
+    onNavigateToProfile: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -281,16 +302,33 @@ fun CustomBottomNavigation() {
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        NavItem(Icons.Default.Home, "Home", Color(0xFFF5A300))
-        NavItem(Icons.Default.Search, "Search", Color.Black)
-        NavItem(Icons.Default.Category, "Categories", Color.Black)
-        NavItem(Icons.Default.Person, "Account", Color.Black)
+        NavItem(Icons.Default.Home, "Home", Color(0xFFF5A300), onClick = {
+            // Biarkan kosong dulu
+        })
+
+        NavItem(Icons.Default.Search, "Search", Color.Black, onClick = {
+            // Biarkan kosong dulu
+        })
+
+        NavItem(Icons.Default.Category, "Categories", Color.Black, onClick = {
+            // Biarkan kosong dulu
+        })
+
+        NavItem(Icons.Default.Person, "Account", Color.Black, onClick = {
+            // 2. Hapus Intent, ganti dengan memanggil fungsi ini
+            onNavigateToProfile()
+        })
     }
 }
-
 @Composable
-fun NavItem(icon: ImageVector, label: String, color: Color) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun NavItem(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        // Tambahkan modifier clickable di sini
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(8.dp) // Opsional: tambah padding agar area klik lebih nyaman
+    ) {
         Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(28.dp))
         Text(text = label, fontSize = 14.sp, color = color)
     }
@@ -300,5 +338,7 @@ fun NavItem(icon: ImageVector, label: String, color: Color) {
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview() {
-    HomeScreen()
+    HomeScreen(
+        onNavigateToProfile = {}
+    )
 }
