@@ -53,6 +53,9 @@ import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 import com.aplikasi.fittrack.ui.screens.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.profile.ProfileScreen
+import com.aplikasi.fittrack.ui.screens.workouts.FullBodyScreen
+import com.aplikasi.fittrack.ui.screens.workouts.LowerBodyScreen
+import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
 
 
 class MainScreen : ComponentActivity() {
@@ -89,7 +92,10 @@ class MainScreen : ComponentActivity() {
                 // Home
                 "home" -> {
                     HomeScreen(
-                        onNavigateToProfile = { currentScreen = "profile" }
+                        onNavigateToProfile = { currentScreen = "profile" },
+                        onNavigateToUpperBody = { currentScreen = "upper_body" },
+                        onNavigateToLowerBody = { currentScreen = "lower_body" },
+                        onNavigateToFullBody = { currentScreen = "full_body" }
                     )
                 }
 
@@ -102,6 +108,34 @@ class MainScreen : ComponentActivity() {
                     )
                 }
 
+                // Workouts
+                "upper_body" -> {
+                    UpperBodyScreen(
+                        onNavigateBack = { currentScreen = "home" }, // Kembali ke Home
+                        onNavigateToDetail = { workoutId ->
+                            // Nanti ubah ke halaman detail, bawa parameternya
+                            android.widget.Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+                "lower_body" -> {
+                    LowerBodyScreen(
+                        onNavigateBack = { currentScreen = "home" },
+                        onNavigateToDetail = { workoutId ->
+                            // Menuju halaman detail
+                            android.widget.Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+                "full_body" -> {
+                    FullBodyScreen(
+                        onNavigateBack = { currentScreen = "home" },
+                        onNavigateToDetail = { workoutId ->
+                            android.widget.Toast.makeText(this@MainScreen, "Detail Workout: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                }
+
                 // Admin
                 "admin" -> {
                     AdminDashboardScreen(
@@ -110,13 +144,11 @@ class MainScreen : ComponentActivity() {
                         onLogout = { currentScreen = "login" }
                     )
                 }
-
                 "add_workout" -> {
                     AddWorkoutScreen(
                         onNavigateBack = { currentScreen = "admin" }
                     )
                 }
-
                 "workout_list" -> {
                     WorkoutListScreen(
                         onNavigateBack = { currentScreen = "admin" },
@@ -132,7 +164,10 @@ class MainScreen : ComponentActivity() {
 
 @Composable
 fun HomeScreen(
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit, // Ke Profile
+    onNavigateToUpperBody: () -> Unit, // Ke Upper Body
+    onNavigateToLowerBody: () -> Unit, // Ke Lower Body
+    onNavigateToFullBody: () -> Unit   // Ke Full Body
 ) {
     Scaffold(
         bottomBar = { CustomBottomNavigation(
@@ -214,9 +249,41 @@ fun HomeScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
-                Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
-                Box(modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color.LightGray))
+                // Kotak 1: Upper Body
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE0E0E0))
+                        .clickable { onNavigateToUpperBody() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Upper Body", fontWeight = FontWeight.Bold)
+                }
+
+                // Kotak 2: Lower Body
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE0E0E0))
+                        .clickable { onNavigateToLowerBody() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Lower Body", fontWeight = FontWeight.Bold)
+                }
+
+                // Kotak 3: Full Body
+                Box(
+                    modifier = Modifier
+                        .size(150.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFE0E0E0))
+                        .clickable { onNavigateToFullBody() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Full Body", fontWeight = FontWeight.Bold)
+                }
             }
 
             // CHALLENGES
@@ -339,6 +406,9 @@ fun NavItem(icon: ImageVector, label: String, color: Color, onClick: () -> Unit)
 @Composable
 fun HomeScreenPreview() {
     HomeScreen(
-        onNavigateToProfile = {}
+        onNavigateToProfile = {},
+        onNavigateToUpperBody = {},
+        onNavigateToLowerBody = {},
+        onNavigateToFullBody = {}
     )
 }
