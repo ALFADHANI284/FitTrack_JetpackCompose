@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.auth
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -160,17 +161,28 @@ fun LoginScreen(
                                     val request = LoginRequest(email, password)
                                     val response = RetrofitClient.instance.loginUser(request)
 
+                                    // 1. Simpan Token ke HP
+                                    val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+                                    sharedPref.edit().putString("ACCESS_TOKEN", response.token).apply()
+
                                     Toast.makeText(context, "Login Berhasil!", Toast.LENGTH_SHORT).show()
 
                                     // 2. LOGIKA CABANG BERDASARKAN ROLE
                                     if (response.role == "admin") {
-                                        onNavigateToAdmin() // Lempar ke Dashboard Admin
+                                        onNavigateToAdmin() // ke Dashboard Admin
                                     } else {
-                                        onNavigateToHome() // Lempar ke Home biasa
+                                        onNavigateToHome() // ke Home biasa
                                     }
 
-                                } catch (e: retrofit2.HttpException) {
-                                    loginResult = "Gagal: Email/Password salah atau server mati"
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+
+                                    // Cek apakah error dari HTTP (Server) atau dari Gagal Baca JSON
+                                    if (e is retrofit2.HttpException) {
+                                        loginResult = "Gagal: Email/Password salah!"
+                                    } else {
+                                        loginResult = "Error Sistem: ${e.localizedMessage}"
+                                    }
                                 } finally {
                                     isLoading = false
                                 }
