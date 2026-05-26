@@ -3,6 +3,7 @@ package com.aplikasi.fittrack.network
 import com.aplikasi.fittrack.model.AuthResponse
 import com.aplikasi.fittrack.model.DefaultResponse
 import com.aplikasi.fittrack.model.LoginRequest
+import com.aplikasi.fittrack.model.ProfileResponse
 import com.aplikasi.fittrack.model.RegisterRequest
 import com.aplikasi.fittrack.model.WorkoutRequest
 import com.aplikasi.fittrack.model.WorkoutResponse
@@ -12,7 +13,6 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface ApiService {
-    // Endpoint ini nyambung ke local laravel : http://10.0.2.2:8000/api/workout
 
     // Ambil Daftar Workout (Admin & User)
     @GET("workouts")
@@ -28,10 +28,17 @@ interface ApiService {
     @POST("register")
     suspend fun registerUser(@Body registerRequest: RegisterRequest): AuthResponse
 
+    @GET("profile")
+    suspend fun getProfile(
+        @Header("Authorization") token: String
+    ): ProfileResponse
+
     // Tambah Data Workout (Hanya Admin)
     @POST("workouts")
     suspend fun createWorkout(
         @Header("Authorization") token: String, // <-- Wajib ada buat ngirim Bearer Token
         @Body request: WorkoutRequest
     ): DefaultResponse
+
+
 }
