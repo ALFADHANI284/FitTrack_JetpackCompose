@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -31,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,11 +43,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.network.RetrofitClient
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
@@ -56,6 +59,7 @@ import com.aplikasi.fittrack.ui.screens.profile.ProfileScreen
 import com.aplikasi.fittrack.ui.screens.workouts.FullBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.LowerBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
+import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
 
 class MainScreen : ComponentActivity() {
@@ -63,7 +67,28 @@ class MainScreen : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            var currentScreen by remember { mutableStateOf("onboarding") } // Buka onboarding pertama kali
+            val context = LocalContext.current
+
+            // 1. CEK TOKEN: Buka brankas SharedPreferences saat aplikasi baru loading
+            val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+            val savedToken = sharedPref.getString("ACCESS_TOKEN", "")
+
+            // 2. LOGIKA CERDAS: Tentukan halaman awal berdasarkan token
+            // Kalau tokennya ada isinya -> langsung masuk "home"
+            // Kalau tokennya kosong -> mulai dari "onboarding"
+            val startDestination = if (!savedToken.isNullOrEmpty()) "home" else "onboarding"
+
+            // 3. Masukkan hasil penentuan tadi ke dalam state
+            var currentScreen by remember { mutableStateOf(startDestination) }
+
+            // --- Panggil API & ViewModel seperti biasa ---
+            val apiService = RetrofitClient.instance
+            val profileViewModel = remember {
+                ProfileViewModel(
+                    apiService = apiService,
+                    context = context.applicationContext
+                )
+            }
 
             when (currentScreen) {
                 "onboarding" -> {
@@ -82,28 +107,34 @@ class MainScreen : ComponentActivity() {
                         onNavigateToAdmin = { currentScreen = "admin" }
                     )
                 }
-                // Register / daftar
                 "register" -> {
                     RegisterScreen(
                         onNavigateToLogin = { currentScreen = "login" }
+                        // Apakah di dalam file RegisterScreen.kt dia butuh ViewModel atau parameter lain?
+                        // Kalau iya, harus ditambahkan di sini juga.
                     )
                 }
 
-                // Home
+                // ... (Kode Register dan Home tetap sama seperti punyamu) ...
+
                 "home" -> {
                     HomeScreen(
+                        viewModel = profileViewModel,
                         onNavigateToProfile = { currentScreen = "profile" },
                         onNavigateToUpperBody = { currentScreen = "upper_body" },
                         onNavigateToLowerBody = { currentScreen = "lower_body" },
                         onNavigateToFullBody = { currentScreen = "full_body" }
                     )
                 }
-
                 // Profile
                 "profile" -> {
                     ProfileScreen(
+                        viewModel = profileViewModel, // Sekarang ini otomatis terhubung dan tidak merah!
                         onLogoutClick = {
-                            currentScreen = "login" // Kalau logout, balik ke login!
+                            val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+                            sharedPref.edit().remove("ACCESS_TOKEN").apply()
+
+                            currentScreen = "login"
                         }
                     )
                 }
@@ -164,11 +195,22 @@ class MainScreen : ComponentActivity() {
 
 @Composable
 fun HomeScreen(
+    viewModel: ProfileViewModel,
     onNavigateToProfile: () -> Unit, // Ke Profile
     onNavigateToUpperBody: () -> Unit, // Ke Upper Body
     onNavigateToLowerBody: () -> Unit, // Ke Lower Body
     onNavigateToFullBody: () -> Unit   // Ke Full Body
 ) {
+
+    val user by viewModel.profileData
+    val namaUser = user?.name ?: "User"
+
+    LaunchedEffect(Unit) {
+        // Panggil fungsi untuk mengambil data dari Laravel
+        // (Pastikan nama fungsinya sesuai dengan yang ada di ProfileViewModel kamu)
+        viewModel.fetchProfile()
+    }
+
     Scaffold(
         bottomBar = { CustomBottomNavigation(
             onNavigateToProfile = onNavigateToProfile
@@ -192,7 +234,7 @@ fun HomeScreen(
             )
             Text(text = "Tue 04 Nov", color = Color(0xFFA3A3A3), fontSize = 12.sp)
             Text(
-                text = "Good Morning Alfa",
+                text = "Good Morning $namaUser",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 4.dp)
@@ -402,13 +444,14 @@ fun NavItem(icon: ImageVector, label: String, color: Color, onClick: () -> Unit)
 }
 
 // Preview
-@Preview(showBackground = true)
-@Composable
-fun HomeScreenPreview() {
-    HomeScreen(
-        onNavigateToProfile = {},
-        onNavigateToUpperBody = {},
-        onNavigateToLowerBody = {},
-        onNavigateToFullBody = {}
-    )
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun HomeScreenPreview() {
+//    HomeScreen(
+//        onNavigateToProfile = {},
+//        onNavigateToUpperBody = {},
+//        onNavigateToLowerBody = {},
+//        onNavigateToFullBody = {},
+//        viewModel = profileViewModel
+//    )
+//}
