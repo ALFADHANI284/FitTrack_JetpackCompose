@@ -2,6 +2,7 @@ package com.aplikasi.fittrack.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,9 +19,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,89 +33,108 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.model.UserData
+import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel,
     onLogoutClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // --- Bagian Header: Foto & Nama ---
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = "Profile Picture",
-            tint = Color.Gray,
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(Color(0xFFEEEEEE))
-                .padding(16.dp)
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "User FitTrack", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Text(text = "alfa@fittrack.com", fontSize = 14.sp, color = Color.Gray)
+    val user by viewModel.profileData
+    val isLoading by viewModel.isLoading
 
-        Spacer(modifier = Modifier.height(32.dp))
+    LaunchedEffect(Unit) {
+        viewModel.fetchProfile()
+    }
 
-        // --- Bagian Stats Info Fisik ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+    // Lempar datanya ke komponen UI murni di bawah
+    ProfileContent(
+        user = user,
+        isLoading = isLoading,
+        onLogoutClick = onLogoutClick
+    )
+}
+
+// 2. Layar Stateless (Murni UI, tidak ada ViewModel di sini)
+@Composable
+fun ProfileContent(
+    user: UserData?,
+    isLoading: Boolean,
+    onLogoutClick: () -> Unit
+) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Row(
+            CircularProgressIndicator(color = Color(0xFFFFB200))
+        }
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // --- Header ---
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = "Profile Picture",
+                tint = Color.Gray,
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFEEEEEE))
+                    .padding(16.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(text = user?.name ?: "No Name", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Text(text = user?.email ?: "No Email", fontSize = 14.sp, color = Color.Gray)
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- Stats Kalori & Makro Nutrisi dari Laravel ---
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(label = "Target Kalori", value = "${user?.dailyCaloriesTarget ?: 0} kcal")
+                    StatItem(label = "Points", value = "${user?.points ?: 0}")
+                    StatItem(label = "Tier", value = user?.tier ?: "Bronze")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ... Tempat untuk Bagian Streak & Achievement yang kemarin ...
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // --- Tombol Logout ---
+            Button(
+                onClick = onLogoutClick,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                shape = RoundedCornerShape(28.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .height(50.dp)
+                    .padding(bottom = 16.dp)
             ) {
-                // Kamu bisa ganti data ini nanti dengan data asli dari database/API Laravel
-                StatItem(label = "Umur", value = "17")
-                StatItem(label = "Berat", value = "65 kg")
-                StatItem(label = "Tinggi", value = "170 cm")
+                Text(text = "Logout", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // --- Bagian Aktivitas Terakhir ---
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(text = "Aktivitas Terakhir kamu", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Contoh dummy data history olahraga
-                Text(text = "🏃‍♂️ Fun Run 5K Selesai", fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(text = "🏋️‍♂️ Leg Day Workout", fontSize = 14.sp)
-            }
-        }
-
-        Spacer(modifier = Modifier.weight(1f)) // Spacer ini buat dorong tombol logout ke paling bawah layar
-
-        // --- Bagian Tombol Logout ---
-        Button(
-            onClick = onLogoutClick,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)), // Warna merah buat logout
-            shape = RoundedCornerShape(28.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .padding(bottom = 16.dp)
-        ) {
-            Text(text = "Logout", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
 
-// --- Komponen Bantuan (Reusable) buat nampilin Umur/Berat/Tinggi ---
 @Composable
 fun StatItem(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -120,10 +143,15 @@ fun StatItem(label: String, value: String) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+// --- Komponen Bantuan ---
+// (StatItem, NeoBrutalistStreakBox, AchievementBadge tetap sama seperti kodemu, tidak perlu diubah)
+// 3. Preview sekarang mengarah ke ProfileContent yang murni UI!
+@Preview(showBackground = true)
 @Composable
-fun ProfileScreenPreview() {
-    ProfileScreen(
+fun ProfileScreenPreviewLoading() {
+    ProfileContent(
+        user = null,
+        isLoading = true, // Ubah jadi false kalau mau ngetes tampilan tanpa loading
         onLogoutClick = {}
     )
 }
