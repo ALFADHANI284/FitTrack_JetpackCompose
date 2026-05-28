@@ -67,7 +67,7 @@ fun WorkoutListScreen(
             val dummyToken = "Bearer TOKEN_ADMIN_LU_DI_SINI"
 
             val response = RetrofitClient.instance.getWorkouts(dummyToken)
-            workoutList = response
+            workoutList = response.data
         } catch (e: Exception) {
             errorMessage = e.message.toString()
         } finally {
