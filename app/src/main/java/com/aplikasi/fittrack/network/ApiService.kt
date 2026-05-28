@@ -1,6 +1,8 @@
 package com.aplikasi.fittrack.network
 
 import com.aplikasi.fittrack.model.AuthResponse
+import com.aplikasi.fittrack.model.BaseResponse
+import com.aplikasi.fittrack.model.CategoryResponse
 import com.aplikasi.fittrack.model.DefaultResponse
 import com.aplikasi.fittrack.model.LoginRequest
 import com.aplikasi.fittrack.model.ProfileResponse
@@ -18,7 +20,7 @@ interface ApiService {
     @GET("workouts")
     suspend fun getWorkouts(
         @Header("Authorization") token: String
-    ): List<WorkoutResponse>
+    ): BaseResponse<List<WorkoutResponse>>
 
     // Endpoint untuk Login
     @POST("login")
@@ -39,6 +41,11 @@ interface ApiService {
         @Header("Authorization") token: String, // <-- Wajib ada buat ngirim Bearer Token
         @Body request: WorkoutRequest
     ): DefaultResponse
+    // Untuk Categories
+    @GET("categories")
+    suspend fun getCategories(
+        @Header("Authorization") token: String
+    ): BaseResponse<List<CategoryResponse>>
 
 
 }
