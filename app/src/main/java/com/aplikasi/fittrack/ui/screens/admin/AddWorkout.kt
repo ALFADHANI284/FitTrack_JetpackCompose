@@ -43,6 +43,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.model.WorkoutRequest
+import com.aplikasi.fittrack.network.RetrofitClient
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,10 +58,11 @@ fun AddWorkoutScreen(
 
     // 1. STATE FORM INPUT (Menyimpan ketikan Admin)
     var name: String by remember { mutableStateOf("") }
-    var categoryId by remember { mutableStateOf("") } // Pake String dulu biar gampang di TextField
+    var categoryId by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
     var calories by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+    var linkYt by remember { mutableStateOf("") }
 
     var isLoading by remember { mutableStateOf(false) }
 
@@ -167,7 +169,20 @@ fun AddWorkoutScreen(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
-        // 5. Deskripsi (Text - Multiline)
+        // 5. Link Youtube (Text)
+        OutlinedTextField(
+            value = linkYt, // Ganti dengan state variabel link_yt kamu
+            onValueChange = { linkYt = it },
+            label = { Text("Link YouTube") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            shape = RoundedCornerShape(12.dp),
+            colors = textFieldColors,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri) // Keyboard khusus URL
+        )
+
+        // 6. Deskripsi (Text - Multiline)
         OutlinedTextField(
             value = description,
             onValueChange = { description = it },
@@ -197,27 +212,33 @@ fun AddWorkoutScreen(
 
                 coroutineScope.launch {
                     try {
-                        // Convert inputan string ke Int biar sesuai sama WorkoutRequest
                         val request = WorkoutRequest(
                             category_id = categoryId.toIntOrNull() ?: 1,
                             name = name,
                             duration_minutes = duration.toIntOrNull() ?: 0,
                             calories_burned = calories.toIntOrNull() ?: 0,
-                            description = description
+                            description = description,
+                            link_yt = linkYt.takeIf { it.isNotBlank() }
                         )
 
-                        // TODO: Ambil token asli lu dari SharedPreferences / DataStore
-                        val dummyToken = "Bearer TOKEN_ADMIN_LU_DI_SINI"
+                        // TODO: Ambil token asli kamu dari SharedPreferences / DataStore
+                        val dummyToken = "35|kDaczeVuwRtCvNngRTkjYtpNlP1VtrP0BSZ7QvD3024878f5"
 
-                        // Tembak API
-                        // val response = RetrofitClient.instance.createWorkout(dummyToken, request)
+                        // 2. Tembak API
+                        val response = RetrofitClient.instance.createWorkout(dummyToken, request)
 
-                        // Simulasi Sukses
-                        Toast.makeText(context, "Workout berhasil ditambahkan!", Toast.LENGTH_SHORT).show()
-                        onNavigateBack() // Otomatis balik ke dashboard admin setelah sukses
+                        // 3. Langsung panggil variabel 'status' dari DefaultResponse kamu
+                        if (response.status) {
+                            Toast.makeText(context, "Workout berhasil ditambahkan!", Toast.LENGTH_SHORT).show()
+                            onNavigateBack()
+                        } else {
+                            // Kalau dari Laravel statusnya false (misal validasi gagal)
+                            Toast.makeText(context, "Gagal: ${response.message}", Toast.LENGTH_LONG).show()
+                        }
 
                     } catch (e: Exception) {
-                        Toast.makeText(context, "Gagal: ${e.message}", Toast.LENGTH_LONG).show()
+                        // Ini kalau error jaringan / server mati
+                        Toast.makeText(context, "Error Jaringan: ${e.message}", Toast.LENGTH_LONG).show()
                     } finally {
                         isLoading = false
                     }
