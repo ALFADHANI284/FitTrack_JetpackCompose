@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack
 
+import UserCategoryScreen
 import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -58,6 +59,7 @@ import com.aplikasi.fittrack.ui.screens.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.profile.ProfileScreen
 import com.aplikasi.fittrack.ui.screens.workouts.FullBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.LowerBodyScreen
+import com.aplikasi.fittrack.ui.screens.workouts.SearchScreen
 import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
 import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
@@ -123,7 +125,27 @@ class MainScreen : ComponentActivity() {
                         onNavigateToProfile = { currentScreen = "profile" },
                         onNavigateToUpperBody = { currentScreen = "upper_body" },
                         onNavigateToLowerBody = { currentScreen = "lower_body" },
-                        onNavigateToFullBody = { currentScreen = "full_body" }
+                        onNavigateToFullBody = { currentScreen = "full_body" },
+                        onNavigateToCategories = { currentScreen = "categories" }
+                    )
+                }
+
+                "search" -> {
+                    SearchScreen(
+                        onNavigateToProfile = { currentScreen = "profile" },
+                        onNavigateToCategories = { currentScreen = "categories" }
+                    )
+                }
+
+                "categories" -> {
+                    UserCategoryScreen(
+                        onNavigateBack = { currentScreen = "home" }, // Biar kalau back baliknya ke Home
+                        onCategoryClick = { categoryId ->
+                            // Toast sementara buat ngetes klik kotaknya
+                            android.widget.Toast.makeText(this@MainScreen, "Klik Kategori ID: $categoryId", android.widget.Toast.LENGTH_SHORT).show()
+
+                            // Nanti kodenya diganti misal: currentScreen = "workout_list_$categoryId"
+                        }
                     )
                 }
                 // Profile
@@ -199,7 +221,8 @@ fun HomeScreen(
     onNavigateToProfile: () -> Unit, // Ke Profile
     onNavigateToUpperBody: () -> Unit, // Ke Upper Body
     onNavigateToLowerBody: () -> Unit, // Ke Lower Body
-    onNavigateToFullBody: () -> Unit   // Ke Full Body
+    onNavigateToFullBody: () -> Unit,  // Ke Full Body
+    onNavigateToCategories: () -> Unit // Ke Categories
 ) {
 
     val user by viewModel.profileData
@@ -213,7 +236,8 @@ fun HomeScreen(
 
     Scaffold(
         bottomBar = { CustomBottomNavigation(
-            onNavigateToProfile = onNavigateToProfile
+            onNavigateToProfile = onNavigateToProfile,
+            onNavigateToCategories = onNavigateToCategories
         ) },
         containerColor = Color.White
     ) { paddingValues ->
@@ -399,7 +423,8 @@ fun ChallengeCard(title: String) {
 
 @Composable
 fun CustomBottomNavigation(
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToCategories: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -415,16 +440,15 @@ fun CustomBottomNavigation(
             // Biarkan kosong dulu
         })
 
-        NavItem(Icons.Default.Search, "Search", Color.Black, onClick = {
-            // Biarkan kosong dulu
-        })
+            NavItem(Icons.Default.Search, "Search", Color.Black, onClick = {
+                // Biarkan kosong dulu
+            })
 
         NavItem(Icons.Default.Category, "Categories", Color.Black, onClick = {
-            // Biarkan kosong dulu
+            onNavigateToCategories()
         })
 
         NavItem(Icons.Default.Person, "Account", Color.Black, onClick = {
-            // 2. Hapus Intent, ganti dengan memanggil fungsi ini
             onNavigateToProfile()
         })
     }
