@@ -57,10 +57,12 @@ import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
 import com.aplikasi.fittrack.ui.screens.onboarding.OnboardingScreen
 import com.aplikasi.fittrack.ui.screens.profile.ProfileScreen
+import com.aplikasi.fittrack.ui.screens.workouts.CategoryWorkoutsScreen
 import com.aplikasi.fittrack.ui.screens.workouts.FullBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.LowerBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.SearchScreen
 import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
+import com.aplikasi.fittrack.ui.screens.workouts.WorkoutDetailScreen
 import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
 
@@ -82,6 +84,9 @@ class MainScreen : ComponentActivity() {
 
             // 3. Masukkan hasil penentuan tadi ke dalam state
             var currentScreen by remember { mutableStateOf(startDestination) }
+            var selectedCategoryId by remember { mutableStateOf(0) }
+            var selectedCategoryName by remember { mutableStateOf("") }
+            var selectedWorkoutId by remember { mutableStateOf(0) }
 
             // --- Panggil API & ViewModel seperti biasa ---
             val apiService = RetrofitClient.instance
@@ -126,7 +131,13 @@ class MainScreen : ComponentActivity() {
                         onNavigateToUpperBody = { currentScreen = "upper_body" },
                         onNavigateToLowerBody = { currentScreen = "lower_body" },
                         onNavigateToFullBody = { currentScreen = "full_body" },
-                        onNavigateToCategories = { currentScreen = "categories" }
+                        onNavigateToCategories = { currentScreen = "categories" },
+
+                        onBodyFocusClick = { id, name ->
+                            selectedCategoryId = id
+                            selectedCategoryName = name
+                            currentScreen = "category_workouts" // Langsung tembak ke halaman dinamis!
+                        }
                     )
                 }
 
@@ -139,13 +150,38 @@ class MainScreen : ComponentActivity() {
 
                 "categories" -> {
                     UserCategoryScreen(
-                        onNavigateBack = { currentScreen = "home" }, // Biar kalau back baliknya ke Home
-                        onCategoryClick = { categoryId ->
-                            // Toast sementara buat ngetes klik kotaknya
-                            android.widget.Toast.makeText(this@MainScreen, "Klik Kategori ID: $categoryId", android.widget.Toast.LENGTH_SHORT).show()
+                        onNavigateBack = { currentScreen = "home" },
+                        onCategoryClick = { id ->
+                            // 1. Tangkap ID
+                            selectedCategoryId = id
+                            // 2. Isi nama sementaranya biar nggak kosong
+                            selectedCategoryName = "Daftar Latihan"
 
-                            // Nanti kodenya diganti misal: currentScreen = "workout_list_$categoryId"
+                            // 3. Pindah halaman
+                            currentScreen = "category_workouts"
                         }
+                    )
+                }
+
+                "category_workouts" -> {
+                    // Pastikan kamu udah bikin file CategoryWorkoutsScreen.kt ya!
+                    CategoryWorkoutsScreen(
+                        categoryId = selectedCategoryId,
+                        categoryName = selectedCategoryName, // <--- BARIS INI YANG TADI KETINGGALAN
+                        onNavigateBack = { currentScreen = "categories" },
+                        onWorkoutDetailClick = { workoutId ->
+                            // 1. Simpan ID latihannya
+                            selectedWorkoutId = workoutId
+                            // 2. Pindah ke layar detail
+                            currentScreen = "workout_detail"
+                        }
+                    )
+                }
+
+                "workout_detail" -> {
+                    WorkoutDetailScreen(
+                        workoutId = selectedWorkoutId,
+                        onNavigateBack = { currentScreen = "category_workouts" }
                     )
                 }
                 // Profile
@@ -222,7 +258,8 @@ fun HomeScreen(
     onNavigateToUpperBody: () -> Unit, // Ke Upper Body
     onNavigateToLowerBody: () -> Unit, // Ke Lower Body
     onNavigateToFullBody: () -> Unit,  // Ke Full Body
-    onNavigateToCategories: () -> Unit // Ke Categories
+    onNavigateToCategories: () -> Unit, // Ke Categories
+    onBodyFocusClick: (Int, String) -> Unit,
 ) {
 
     val user by viewModel.profileData
@@ -306,7 +343,6 @@ fun HomeScreen(
 
             // FEATURED PLAN
             SectionTitle(title = "Body Focus", modifier = Modifier.padding(top = 20.dp))
-
             // Horizontal ScrollView 1
             Row(
                 modifier = Modifier
@@ -321,7 +357,8 @@ fun HomeScreen(
                         .size(150.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFE0E0E0))
-                        .clickable { onNavigateToUpperBody() },
+                        // PERHATIAN: Pastikan angka '1' ini sama dengan ID Upper Body di database Laravel kamu ya!
+                        .clickable { onBodyFocusClick(1, "Upper Body") },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Upper Body", fontWeight = FontWeight.Bold)
@@ -333,7 +370,8 @@ fun HomeScreen(
                         .size(150.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFE0E0E0))
-                        .clickable { onNavigateToLowerBody() },
+                        // Pastikan angka '2' ini sama dengan ID Lower Body di database
+                        .clickable { onBodyFocusClick(2, "Lower Body") },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Lower Body", fontWeight = FontWeight.Bold)
@@ -345,7 +383,8 @@ fun HomeScreen(
                         .size(150.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(Color(0xFFE0E0E0))
-                        .clickable { onNavigateToFullBody() },
+                        // Pastikan angka '3' ini sama dengan ID Full Body di database
+                        .clickable { onBodyFocusClick(3, "Full Body") },
                     contentAlignment = Alignment.Center
                 ) {
                     Text("Full Body", fontWeight = FontWeight.Bold)
