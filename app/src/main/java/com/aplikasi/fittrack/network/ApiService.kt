@@ -7,19 +7,26 @@ import com.aplikasi.fittrack.model.AuthResponse
 import com.aplikasi.fittrack.model.BaseResponse
 import com.aplikasi.fittrack.model.CategoryResponse
 import com.aplikasi.fittrack.model.DefaultResponse
+import com.aplikasi.fittrack.model.FavoriteResponse
 import com.aplikasi.fittrack.model.LoginRequest
 import com.aplikasi.fittrack.model.OnboardingRequest
 import com.aplikasi.fittrack.model.OnboardingResponse
 import com.aplikasi.fittrack.model.ProfileResponse
 import com.aplikasi.fittrack.model.RegisterRequest
+import com.aplikasi.fittrack.model.ScheduleListResponse
+import com.aplikasi.fittrack.model.ScheduleRequest
+import com.aplikasi.fittrack.model.ScheduleResponse
 import com.aplikasi.fittrack.model.WorkoutRequest
 import com.aplikasi.fittrack.model.WorkoutResponse
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.Path
+
 
 interface ApiService {
 
@@ -36,7 +43,7 @@ interface ApiService {
     // Endpoint untuk Register
     @POST("register")
     suspend fun registerUser(@Body registerRequest: RegisterRequest): AuthResponse
-
+    @Headers("Accept: application/json")
     @GET("profile")
     suspend fun getProfile(
         @Header("Authorization") token: String
@@ -96,5 +103,28 @@ interface ApiService {
         @Header("Authorization") token: String
     ): DefaultResponse
 
+    // Favorites
+    @POST("favorites/{workoutId}")
+    suspend fun addToFavorite(
+        @Header("Authorization") token: String,
+        @Path("workoutId") workoutId: Int
+    ): Response<FavoriteResponse>
 
+    @DELETE("favorites/{workoutId}")
+    suspend fun removeFromFavorite(
+        @Header("Authorization") token: String,
+        @Path("workoutId") workoutId: Int
+    ): Response<FavoriteResponse>
+
+    // Schedules
+    @POST("schedules")
+    suspend fun createSchedule(
+        @Header("Authorization") token: String,
+        @Body request: ScheduleRequest
+    ): Response<ScheduleResponse>
+    @GET("workout-schedules")
+    suspend fun getMySchedules(
+        @Header("Authorization") token: String
+    ): ScheduleListResponse
 }
+
