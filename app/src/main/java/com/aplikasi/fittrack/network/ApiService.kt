@@ -1,17 +1,24 @@
 package com.aplikasi.fittrack.network
 
+import com.aplikasi.fittrack.model.AiChatHistoryResponse
+import com.aplikasi.fittrack.model.AiChatRequest
+import com.aplikasi.fittrack.model.AiChatStoreResponse
 import com.aplikasi.fittrack.model.AuthResponse
 import com.aplikasi.fittrack.model.BaseResponse
 import com.aplikasi.fittrack.model.CategoryResponse
 import com.aplikasi.fittrack.model.DefaultResponse
 import com.aplikasi.fittrack.model.LoginRequest
+import com.aplikasi.fittrack.model.OnboardingRequest
+import com.aplikasi.fittrack.model.OnboardingResponse
 import com.aplikasi.fittrack.model.ProfileResponse
 import com.aplikasi.fittrack.model.RegisterRequest
 import com.aplikasi.fittrack.model.WorkoutRequest
 import com.aplikasi.fittrack.model.WorkoutResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 
 interface ApiService {
@@ -46,6 +53,48 @@ interface ApiService {
     suspend fun getCategories(
         @Header("Authorization") token: String
     ): BaseResponse<List<CategoryResponse>>
+
+
+    // Goals
+    @Headers("Accept: application/json")
+    @POST("profile/onboarding")
+    suspend fun saveOnboarding(
+        @Header("Authorization") token: String,
+        @Body request: OnboardingRequest
+    ): OnboardingResponse
+
+    // FitAI
+    // 1. Ambil Histori Chat AI
+    @GET("ai/chat")
+    suspend fun getAiChatHistory(
+        @Header("Authorization") token: String
+    ): AiChatHistoryResponse
+
+    // 2. Kirim Pesan ke AI
+    @POST("ai/chat")
+    suspend fun sendAiChatMessage(
+        @Header("Authorization") token: String,
+        @Body request: AiChatRequest
+    ): AiChatStoreResponse
+
+    // 3. Ambil Data Personalisasi AI (Preferences)
+    @GET("ai/personalization")
+    suspend fun getAiPersonalization(
+        @Header("Authorization") token: String
+    ): DefaultResponse
+
+    // 4. Simpan/Update Personalisasi AI
+    @POST("ai/personalization")
+    suspend fun saveAiPersonalization(
+        @Header("Authorization") token: String,
+        @Body request: Any
+    ): DefaultResponse
+
+    // 5. Hapus Personalisasi AI
+    @DELETE("ai/personalization")
+    suspend fun deleteAiPersonalization(
+        @Header("Authorization") token: String
+    ): DefaultResponse
 
 
 }
