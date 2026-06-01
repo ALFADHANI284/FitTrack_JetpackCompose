@@ -3,6 +3,7 @@ package com.aplikasi.fittrack
 import UserCategoryScreen
 import android.content.Context
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -46,7 +47,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,7 +70,6 @@ import com.aplikasi.fittrack.ui.screens.workouts.WorkoutDetailScreen
 import com.aplikasi.fittrack.ui.setup.OnboardingHostScreen
 import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
-
 class MainScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -78,22 +77,18 @@ class MainScreen : ComponentActivity() {
         setContent {
             val context = LocalContext.current
 
-            // 1. CEK TOKEN: Buka brankas SharedPreferences saat aplikasi baru loading
+            // 1. Cek Token
             val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
             val savedToken = sharedPref.getString("ACCESS_TOKEN", "")
 
-            // 2. LOGIKA CERDAS: Tentukan halaman awal berdasarkan token
-            // Kalau tokennya ada isinya -> langsung masuk "home"
-            // Kalau tokennya kosong -> mulai dari "onboarding"
+            // 2. Logika start screen
             val startDestination = if (!savedToken.isNullOrEmpty()) "home" else "onboarding"
 
-            // 3. Masukkan hasil penentuan tadi ke dalam state
             var currentScreen by remember { mutableStateOf(startDestination) }
             var selectedCategoryId by remember { mutableStateOf(0) }
             var selectedCategoryName by remember { mutableStateOf("") }
             var selectedWorkoutId by remember { mutableStateOf(0) }
 
-            // --- Panggil API & ViewModel seperti biasa ---
             val apiService = RetrofitClient.instance
             val profileViewModel = remember {
                 ProfileViewModel(
@@ -102,184 +97,168 @@ class MainScreen : ComponentActivity() {
                 )
             }
 
-            when (currentScreen) {
-                "onboarding" -> {
-                    OnboardingScreen(
-                        onNavigateToLogin = { currentScreen = "login" },
-                        onNavigateToRegister = { currentScreen = "register" },
-                        onNavigateToHome = { currentScreen = "home" }
-                    )
+            // 👇 SCAFFOLD UTAMA (BINGKAI APLIKASI)
+            Scaffold(
+                bottomBar = {
+                    // Navbar cuma muncul di layar utama
+                    if (currentScreen in listOf("home", "search", "categories", "profile")) {
+                        CustomBottomNavigation(
+                            currentScreen = currentScreen,
+                            onNavigateToHome = { currentScreen = "home" },
+                            onNavigateToSearch = { currentScreen = "search" },
+                            onNavigateToCategories = { currentScreen = "categories" },
+                            onNavigateToProfile = { currentScreen = "profile" }
+                        )
+                    }
                 }
+            ) { innerPadding ->
 
-                // Login / masuk
-                "login" -> {
-                    LoginScreen(
-                        onNavigateToHome = { currentScreen = "home" },
-                        onNavigateToRegister = { currentScreen = "register" },
-                        onNavigateToAdmin = { currentScreen = "admin" },
-                        onNavigateToSetupGoal = { currentScreen = "setup_goal" }
-                    )
-                }
-                "register" -> {
-                    RegisterScreen(
-                        onNavigateToLogin = { currentScreen = "login" }
-                        // Apakah di dalam file RegisterScreen.kt dia butuh ViewModel atau parameter lain?
-                        // Kalau iya, harus ditambahkan di sini juga.
-                    )
-                }
-
-                "setup_goal" -> {
-                    OnboardingHostScreen(
-                        onFinishOnboarding = { currentScreen = "home" } // Kalau 6 slide beres, lempar ke Home
-                    )
-                }
-
-                "home" -> {
-                    HomeScreen(
-                        viewModel = profileViewModel,
-                        onNavigateToProfile = { currentScreen = "profile" },
-                        onNavigateToUpperBody = { currentScreen = "upper_body" },
-                        onNavigateToLowerBody = { currentScreen = "lower_body" },
-                        onNavigateToFullBody = { currentScreen = "full_body" },
-                        onNavigateToCategories = { currentScreen = "categories" },
-
-                        onBodyFocusClick = { id, name ->
-                            selectedCategoryId = id
-                            selectedCategoryName = name
-                            currentScreen = "category_workouts" // Langsung tembak ke halaman dinamis!
+                // 👇 LAYAR TV (KONTEN YANG BERUBAH-UBAH)
+                Box(modifier = Modifier.padding(innerPadding)) {
+                    when (currentScreen) {
+                        "onboarding" -> {
+                            OnboardingScreen(
+                                onNavigateToLogin = { currentScreen = "login" },
+                                onNavigateToRegister = { currentScreen = "register" },
+                                onNavigateToHome = { currentScreen = "home" }
+                            )
                         }
-                    )
-                }
-
-                "search" -> {
-                    SearchScreen(
-                        onNavigateToProfile = { currentScreen = "profile" },
-                        onNavigateToCategories = { currentScreen = "categories" }
-                    )
-                }
-
-                "categories" -> {
-                    UserCategoryScreen(
-                        onNavigateBack = { currentScreen = "home" },
-                        onCategoryClick = { id ->
-                            // 1. Tangkap ID
-                            selectedCategoryId = id
-                            // 2. Isi nama sementaranya biar nggak kosong
-                            selectedCategoryName = "Daftar Latihan"
-
-                            // 3. Pindah halaman
-                            currentScreen = "category_workouts"
+                        "login" -> {
+                            LoginScreen(
+                                onNavigateToHome = { currentScreen = "home" },
+                                onNavigateToRegister = { currentScreen = "register" },
+                                onNavigateToAdmin = { currentScreen = "admin" },
+                                onNavigateToSetupGoal = { currentScreen = "setup_goal" }
+                            )
                         }
-                    )
-                }
-
-                "category_workouts" -> {
-                    // Pastikan kamu udah bikin file CategoryWorkoutsScreen.kt ya!
-                    CategoryWorkoutsScreen(
-                        categoryId = selectedCategoryId,
-                        categoryName = selectedCategoryName, // <--- BARIS INI YANG TADI KETINGGALAN
-                        onNavigateBack = { currentScreen = "categories" },
-                        onWorkoutDetailClick = { workoutId ->
-                            // 1. Simpan ID latihannya
-                            selectedWorkoutId = workoutId
-                            // 2. Pindah ke layar detail
-                            currentScreen = "workout_detail"
+                        "register" -> {
+                            RegisterScreen(
+                                onNavigateToLogin = { currentScreen = "login" }
+                            )
                         }
-                    )
-                }
-
-                "workout_detail" -> {
-                    WorkoutDetailScreen(
-                        workoutId = selectedWorkoutId,
-                        onNavigateBack = { currentScreen = "category_workouts" }
-                    )
-                }
-                // Profile
-                "profile" -> {
-                    ProfileScreen(
-                        viewModel = profileViewModel, // Sekarang ini otomatis terhubung dan tidak merah!
-                        onLogoutClick = {
-                            val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
-                            sharedPref.edit().remove("ACCESS_TOKEN").apply()
-
-                            currentScreen = "login"
+                        "setup_goal" -> {
+                            OnboardingHostScreen(
+                                onFinishOnboarding = { currentScreen = "home" }
+                            )
                         }
-                    )
-                }
-
-                // Workouts
-                "upper_body" -> {
-                    UpperBodyScreen(
-                        onNavigateBack = { currentScreen = "home" }, // Kembali ke Home
-                        onNavigateToDetail = { workoutId ->
-                            // Nanti ubah ke halaman detail, bawa parameternya
-                            android.widget.Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        "home" -> {
+                            HomeScreen(
+                                viewModel = profileViewModel,
+                                onBodyFocusClick = { id, name ->
+                                    selectedCategoryId = id
+                                    selectedCategoryName = name
+                                    currentScreen = "category_workouts"
+                                }
+                            )
                         }
-                    )
-                }
-                "lower_body" -> {
-                    LowerBodyScreen(
-                        onNavigateBack = { currentScreen = "home" },
-                        onNavigateToDetail = { workoutId ->
-                            // Menuju halaman detail
-                            android.widget.Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        "search" -> {
+                            SearchScreen(
+                                onNavigateToProfile = { currentScreen = "profile" },
+                                onNavigateToCategories = { currentScreen = "categories" }
+                            )
                         }
-                    )
-                }
-                "full_body" -> {
-                    FullBodyScreen(
-                        onNavigateBack = { currentScreen = "home" },
-                        onNavigateToDetail = { workoutId ->
-                            android.widget.Toast.makeText(this@MainScreen, "Detail Workout: $workoutId", android.widget.Toast.LENGTH_SHORT).show()
+                        "categories" -> {
+                            UserCategoryScreen(
+                                onNavigateBack = { currentScreen = "home" },
+                                onCategoryClick = { id ->
+                                    selectedCategoryId = id
+                                    selectedCategoryName = "Daftar Latihan"
+                                    currentScreen = "category_workouts"
+                                }
+                            )
                         }
-                    )
-                }
-
-                // Admin
-                "admin" -> {
-                    AdminDashboardScreen(
-                        onNavigateToAddWorkout = { currentScreen = "add_workout" },
-                        onNavigateToWorkoutList = { currentScreen = "workout_list" },
-                        onLogout = { currentScreen = "login" }
-                    )
-                }
-                "add_workout" -> {
-                    AddWorkoutScreen(
-                        onNavigateBack = { currentScreen = "admin" }
-                    )
-                }
-                "workout_list" -> {
-                    WorkoutListScreen(
-                        onNavigateBack = { currentScreen = "admin" },
-                        onNavigateToEdit = { id ->
-                            android.widget.Toast.makeText(this@MainScreen, "Mau edit ID: $id", android.widget.Toast.LENGTH_SHORT).show()
+                        "category_workouts" -> {
+                            CategoryWorkoutsScreen(
+                                categoryId = selectedCategoryId,
+                                categoryName = selectedCategoryName,
+                                onNavigateBack = { currentScreen = "categories" },
+                                onWorkoutDetailClick = { workoutId ->
+                                    selectedWorkoutId = workoutId
+                                    currentScreen = "workout_detail"
+                                }
+                            )
                         }
-                    )
+                        "workout_detail" -> {
+                            WorkoutDetailScreen(
+                                workoutId = selectedWorkoutId,
+                                onNavigateBack = { currentScreen = "category_workouts" }
+                            )
+                        }
+                        "profile" -> {
+                            ProfileScreen(
+                                viewModel = profileViewModel,
+                                onLogoutClick = {
+                                    sharedPref.edit().remove("ACCESS_TOKEN").apply()
+                                    currentScreen = "login"
+                                },
+                                onNavigateToLogin = {
+                                    currentScreen = "login"
+                                }
+                            )
+                        }
+                        "upper_body" -> {
+                            UpperBodyScreen(
+                                onNavigateBack = { currentScreen = "home" },
+                                onNavigateToDetail = { workoutId ->
+                                    Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        "lower_body" -> {
+                            LowerBodyScreen(
+                                onNavigateBack = { currentScreen = "home" },
+                                onNavigateToDetail = { workoutId ->
+                                    Toast.makeText(this@MainScreen, "Buka detail ID: $workoutId", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        "full_body" -> {
+                            FullBodyScreen(
+                                onNavigateBack = { currentScreen = "home" },
+                                onNavigateToDetail = { workoutId ->
+                                    Toast.makeText(this@MainScreen, "Detail Workout: $workoutId", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                        "admin" -> {
+                            AdminDashboardScreen(
+                                onNavigateToAddWorkout = { currentScreen = "add_workout" },
+                                onNavigateToWorkoutList = { currentScreen = "workout_list" },
+                                onLogout = { currentScreen = "login" }
+                            )
+                        }
+                        "add_workout" -> {
+                            AddWorkoutScreen(
+                                onNavigateBack = { currentScreen = "admin" }
+                            )
+                        }
+                        "workout_list" -> {
+                            WorkoutListScreen(
+                                onNavigateBack = { currentScreen = "admin" },
+                                onNavigateToEdit = { id ->
+                                    Toast.makeText(this@MainScreen, "Mau edit ID: $id", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+// --- HOME SCREEN ---
 @Composable
 fun HomeScreen(
     viewModel: ProfileViewModel,
-    onNavigateToProfile: () -> Unit,
-    onNavigateToUpperBody: () -> Unit,
-    onNavigateToLowerBody: () -> Unit,
-    onNavigateToFullBody: () -> Unit,
-    onNavigateToCategories: () -> Unit,
     onBodyFocusClick: (Int, String) -> Unit,
 ) {
-    // State untuk mengontrol buka-tutup pop-up FitAI
     var showAiChat by remember { mutableStateOf(false) }
 
-    // Ambil Token User dari SharedPreferences (Sesuaikan namanya jika berbeda)
     val context = LocalContext.current
-    val sharedPreferences = context.getSharedPreferences("NAMA_PREF_KAMU", Context.MODE_PRIVATE)
-    val savedToken = sharedPreferences.getString("TOKEN_KEY_KAMU", "") ?: ""
+    val sharedPreferences = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+    val savedToken = sharedPreferences.getString("ACCESS_TOKEN", "") ?: ""
 
-    // Data Profile User
     val user by viewModel.profileData
     val namaUser = user?.name ?: "User"
 
@@ -287,14 +266,8 @@ fun HomeScreen(
         viewModel.fetchProfile()
     }
 
-    // HANYA ADA 1 SCAFFOLD UTAMA
+    // Scaffold di sini cuma buat tombol Floating AI
     Scaffold(
-        bottomBar = {
-            CustomBottomNavigation(
-                onNavigateToProfile = onNavigateToProfile,
-                onNavigateToCategories = onNavigateToCategories
-            )
-        },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAiChat = true },
@@ -307,8 +280,6 @@ fun HomeScreen(
         },
         containerColor = Color.White
     ) { paddingValues ->
-
-        // KONTEN UTAMA HOME
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -355,7 +326,6 @@ fun HomeScreen(
                         Text("Week ▾", fontSize = 14.sp, color = Color.Gray)
                     }
 
-                    // BAR CHART (Dummy)
                     Row(
                         modifier = Modifier.fillMaxWidth().height(70.dp).padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -381,21 +351,18 @@ fun HomeScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Kotak 1: Upper Body
                 Box(
                     modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(1, "Upper Body") },
                     contentAlignment = Alignment.Center
                 ) { Text("Upper Body", fontWeight = FontWeight.Bold) }
 
-                // Kotak 2: Lower Body
                 Box(
                     modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(2, "Lower Body") },
                     contentAlignment = Alignment.Center
                 ) { Text("Lower Body", fontWeight = FontWeight.Bold) }
 
-                // Kotak 3: Full Body
                 Box(
                     modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(3, "Full Body") },
@@ -448,7 +415,65 @@ fun HomeScreen(
     }
 }
 
-// --- KOMPONEN BANTUAN ---
+// --- KOMPONEN NAVIGASI & BANTUAN UTAMA ---
+@Composable
+fun CustomBottomNavigation(
+    currentScreen: String,
+    onNavigateToHome: () -> Unit,
+    onNavigateToSearch: () -> Unit,
+    onNavigateToCategories: () -> Unit,
+    onNavigateToProfile: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp)
+            .shadow(8.dp)
+            .background(Color.White)
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        NavItem(
+            icon = Icons.Default.Home,
+            label = "Home",
+            color = if (currentScreen == "home") Color(0xFFF5A300) else Color.Gray,
+            onClick = onNavigateToHome
+        )
+        NavItem(
+            icon = Icons.Default.Search,
+            label = "Search",
+            color = if (currentScreen == "search") Color(0xFFF5A300) else Color.Gray,
+            onClick = onNavigateToSearch
+        )
+        NavItem(
+            icon = Icons.Default.Category,
+            label = "Categories",
+            color = if (currentScreen == "categories") Color(0xFFF5A300) else Color.Gray,
+            onClick = onNavigateToCategories
+        )
+        NavItem(
+            icon = Icons.Default.Person,
+            label = "Account",
+            color = if (currentScreen == "profile") Color(0xFFF5A300) else Color.Gray,
+            onClick = onNavigateToProfile
+        )
+    }
+}
+
+@Composable
+fun NavItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, color: Color, onClick: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(8.dp)
+    ) {
+        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(28.dp))
+        Text(text = label, fontSize = 14.sp, color = color)
+    }
+}
+
 @Composable
 fun SectionTitle(title: String, modifier: Modifier = Modifier) {
     Row(
@@ -476,62 +501,3 @@ fun ChallengeCard(title: String) {
         Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black, modifier = Modifier.padding(top = 8.dp))
     }
 }
-
-@Composable
-fun CustomBottomNavigation(
-    onNavigateToProfile: () -> Unit,
-    onNavigateToCategories: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .shadow(8.dp)
-            .background(Color.White)
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        NavItem(Icons.Default.Home, "Home", Color(0xFFF5A300), onClick = {
-            // Biarkan kosong dulu
-        })
-
-            NavItem(Icons.Default.Search, "Search", Color.Black, onClick = {
-                // Biarkan kosong dulu
-            })
-
-        NavItem(Icons.Default.Category, "Categories", Color.Black, onClick = {
-            onNavigateToCategories()
-        })
-
-        NavItem(Icons.Default.Person, "Account", Color.Black, onClick = {
-            onNavigateToProfile()
-        })
-    }
-}
-@Composable
-fun NavItem(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        // Tambahkan modifier clickable di sini
-        modifier = Modifier
-            .clickable { onClick() }
-            .padding(8.dp) // Opsional: tambah padding agar area klik lebih nyaman
-    ) {
-        Icon(icon, contentDescription = label, tint = color, modifier = Modifier.size(28.dp))
-        Text(text = label, fontSize = 14.sp, color = color)
-    }
-}
-
-// Preview
-//@Preview(showBackground = true)
-//@Composable
-//fun HomeScreenPreview() {
-//    HomeScreen(
-//        onNavigateToProfile = {},
-//        onNavigateToUpperBody = {},
-//        onNavigateToLowerBody = {},
-//        onNavigateToFullBody = {},
-//        viewModel = profileViewModel
-//    )
-//}
