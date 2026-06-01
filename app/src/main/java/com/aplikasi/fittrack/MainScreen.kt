@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,8 +28,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -50,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.network.RetrofitClient
+import com.aplikasi.fittrack.ui.FitAiChatSheet
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
@@ -63,6 +67,7 @@ import com.aplikasi.fittrack.ui.screens.workouts.LowerBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.SearchScreen
 import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.WorkoutDetailScreen
+import com.aplikasi.fittrack.ui.setup.OnboardingHostScreen
 import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 
 
@@ -111,7 +116,8 @@ class MainScreen : ComponentActivity() {
                     LoginScreen(
                         onNavigateToHome = { currentScreen = "home" },
                         onNavigateToRegister = { currentScreen = "register" },
-                        onNavigateToAdmin = { currentScreen = "admin" }
+                        onNavigateToAdmin = { currentScreen = "admin" },
+                        onNavigateToSetupGoal = { currentScreen = "setup_goal" }
                     )
                 }
                 "register" -> {
@@ -122,7 +128,11 @@ class MainScreen : ComponentActivity() {
                     )
                 }
 
-                // ... (Kode Register dan Home tetap sama seperti punyamu) ...
+                "setup_goal" -> {
+                    OnboardingHostScreen(
+                        onFinishOnboarding = { currentScreen = "home" } // Kalau 6 slide beres, lempar ke Home
+                    )
+                }
 
                 "home" -> {
                     HomeScreen(
@@ -254,30 +264,51 @@ class MainScreen : ComponentActivity() {
 @Composable
 fun HomeScreen(
     viewModel: ProfileViewModel,
-    onNavigateToProfile: () -> Unit, // Ke Profile
-    onNavigateToUpperBody: () -> Unit, // Ke Upper Body
-    onNavigateToLowerBody: () -> Unit, // Ke Lower Body
-    onNavigateToFullBody: () -> Unit,  // Ke Full Body
-    onNavigateToCategories: () -> Unit, // Ke Categories
+    onNavigateToProfile: () -> Unit,
+    onNavigateToUpperBody: () -> Unit,
+    onNavigateToLowerBody: () -> Unit,
+    onNavigateToFullBody: () -> Unit,
+    onNavigateToCategories: () -> Unit,
     onBodyFocusClick: (Int, String) -> Unit,
 ) {
+    // State untuk mengontrol buka-tutup pop-up FitAI
+    var showAiChat by remember { mutableStateOf(false) }
 
+    // Ambil Token User dari SharedPreferences (Sesuaikan namanya jika berbeda)
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("NAMA_PREF_KAMU", Context.MODE_PRIVATE)
+    val savedToken = sharedPreferences.getString("TOKEN_KEY_KAMU", "") ?: ""
+
+    // Data Profile User
     val user by viewModel.profileData
     val namaUser = user?.name ?: "User"
 
     LaunchedEffect(Unit) {
-        // Panggil fungsi untuk mengambil data dari Laravel
-        // (Pastikan nama fungsinya sesuai dengan yang ada di ProfileViewModel kamu)
         viewModel.fetchProfile()
     }
 
+    // HANYA ADA 1 SCAFFOLD UTAMA
     Scaffold(
-        bottomBar = { CustomBottomNavigation(
-            onNavigateToProfile = onNavigateToProfile,
-            onNavigateToCategories = onNavigateToCategories
-        ) },
+        bottomBar = {
+            CustomBottomNavigation(
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToCategories = onNavigateToCategories
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showAiChat = true },
+                containerColor = Color.Black,
+                contentColor = Color.White,
+                shape = CircleShape
+            ) {
+                Icon(Icons.Default.SmartToy, contentDescription = "Tanya FitAI")
+            }
+        },
         containerColor = Color.White
     ) { paddingValues ->
+
+        // KONTEN UTAMA HOME
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -332,7 +363,7 @@ fun HomeScreen(
                     ) {
                         BarItem("Sun", 20, Color(0xFFE6E6E6))
                         BarItem("Mon", 28, Color(0xFFE6E6E6))
-                        BarItem("Tue", 42, Color(0xFFFFB200)) // Active
+                        BarItem("Tue", 42, Color(0xFFFFB200))
                         BarItem("Wed", 30, Color(0xFFE6E6E6))
                         BarItem("Thu", 26, Color(0xFFE6E6E6))
                         BarItem("Fri", 24, Color(0xFFE6E6E6))
@@ -343,7 +374,6 @@ fun HomeScreen(
 
             // FEATURED PLAN
             SectionTitle(title = "Body Focus", modifier = Modifier.padding(top = 20.dp))
-            // Horizontal ScrollView 1
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -353,48 +383,28 @@ fun HomeScreen(
             ) {
                 // Kotak 1: Upper Body
                 Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE0E0E0))
-                        // PERHATIAN: Pastikan angka '1' ini sama dengan ID Upper Body di database Laravel kamu ya!
+                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(1, "Upper Body") },
                     contentAlignment = Alignment.Center
-                ) {
-                    Text("Upper Body", fontWeight = FontWeight.Bold)
-                }
+                ) { Text("Upper Body", fontWeight = FontWeight.Bold) }
 
                 // Kotak 2: Lower Body
                 Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE0E0E0))
-                        // Pastikan angka '2' ini sama dengan ID Lower Body di database
+                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(2, "Lower Body") },
                     contentAlignment = Alignment.Center
-                ) {
-                    Text("Lower Body", fontWeight = FontWeight.Bold)
-                }
+                ) { Text("Lower Body", fontWeight = FontWeight.Bold) }
 
                 // Kotak 3: Full Body
                 Box(
-                    modifier = Modifier
-                        .size(150.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFFE0E0E0))
-                        // Pastikan angka '3' ini sama dengan ID Full Body di database
+                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
                         .clickable { onBodyFocusClick(3, "Full Body") },
                     contentAlignment = Alignment.Center
-                ) {
-                    Text("Full Body", fontWeight = FontWeight.Bold)
-                }
+                ) { Text("Full Body", fontWeight = FontWeight.Bold) }
             }
 
             // CHALLENGES
             SectionTitle(title = "Challenges", modifier = Modifier.padding(top = 20.dp))
-
-            // Horizontal ScrollView 2
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -408,7 +418,6 @@ fun HomeScreen(
 
             // PROGRESS
             SectionTitle(title = "Your Progress", modifier = Modifier.padding(top = 22.dp))
-
             Card(
                 modifier = Modifier.fillMaxWidth().height(130.dp).padding(top = 12.dp),
                 shape = RoundedCornerShape(18.dp),
@@ -427,6 +436,14 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+
+        // POP-UP FIT AI
+        if (showAiChat) {
+            FitAiChatSheet(
+                token = "Bearer $savedToken",
+                onDismiss = { showAiChat = false }
+            )
         }
     }
 }
