@@ -11,6 +11,8 @@ data class UserData(
     val points: Int,
     val tier: String?,
     val goal: String?,
+    val weight: Int?,
+    val height: Int?,
     @SerializedName("referral_code") val referralCode: String?,
     @SerializedName("daily_calories_target") val dailyCaloriesTarget: Int?,
     @SerializedName("daily_protein_target") val dailyProteinTarget: Int?,
