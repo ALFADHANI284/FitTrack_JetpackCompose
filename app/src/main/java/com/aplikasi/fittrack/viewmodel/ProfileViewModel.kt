@@ -19,31 +19,39 @@ class ProfileViewModel(
     var isLoading = mutableStateOf(true)
         private set
 
+    var isGuest = mutableStateOf(false)
+        private set
+
     fun fetchProfile() {
-        // viewModelScope.launch digunakan agar proses ambil data berjalan di background (tidak bikin UI nge-freeze)
         viewModelScope.launch {
-            isLoading.value = true // Nyalakan animasi loading
+            isLoading.value = true
 
             try {
-                // 1. Ambil token dari SharedPreferences yang sudah disimpan saat Login
                 val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
                 val token = sharedPref.getString("ACCESS_TOKEN", "") ?: ""
 
                 if (token.isNotEmpty()) {
-                    // 2. Tembak API Laravel menggunakan Bearer Token
+                    println("DEBUG_PROFIL: Token ada -> $token") // Cek token
+
                     val response = apiService.getProfile("Bearer $token")
 
-                    // 3. Masukkan data asli (UserData) dari Laravel ke dalam State
+                    println("DEBUG_PROFIL: Sukses nembak API! Data User -> ${response.data}") // Cek isi datanya
+
                     profileData.value = response.data
+                    isGuest.value = false
                 } else {
-                    println("Token kosong! User mungkin belum login atau session habis.")
+                    println("DEBUG_PROFIL: Token kosong woy!")
+                    isGuest.value = true
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Masuk ke sini kalau internet mati atau token ditolak (Unauthorized)
-                println("Gagal mengambil data profil: ${e.message}")
+                // 👇 Ini penting banget biar kelihatan error aslinya!
+                println("DEBUG_PROFIL: ERROR BANG -> ${e.localizedMessage}")
+
+                if (e is retrofit2.HttpException && e.code() == 401) {
+                    isGuest.value = true
+                }
             } finally {
-                // 4. Matikan animasi loading, entah prosesnya tadi sukses ataupun gagal
                 isLoading.value = false
             }
         }
