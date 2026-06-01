@@ -53,7 +53,8 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     onNavigateToHome: () -> Unit,
     onNavigateToRegister: () -> Unit, // Buat tombol Sign Up di bawah
-    onNavigateToAdmin: () -> Unit //
+    onNavigateToAdmin: () -> Unit, //
+    onNavigateToSetupGoal: () -> Unit
 ) {
     // 1. STATE: Untuk API
     var email by remember { mutableStateOf("") }
@@ -167,11 +168,16 @@ fun LoginScreen(
 
                                     Toast.makeText(context, "Login Berhasil!", Toast.LENGTH_SHORT).show()
 
-                                    // 2. LOGIKA CABANG BERDASARKAN ROLE
+                                    // 2. LOGIKA CABANG BERDASARKAN ROLE & STATUS ONBOARDING
                                     if (response.role == "admin") {
                                         onNavigateToAdmin() // ke Dashboard Admin
                                     } else {
-                                        onNavigateToHome() // ke Home biasa
+                                        // Cek apakah user belum pernah setup goal
+                                        if (response.user.goal == null) {
+                                            onNavigateToSetupGoal() // <-- Panggil fungsi ini biar currentScreen ganti jadi "setup_goal"
+                                        } else {
+                                            onNavigateToHome()
+                                        }
                                     }
 
                                 } catch (e: Exception) {
@@ -247,6 +253,7 @@ fun LoginScreenPreview() {
     LoginScreen(
         onNavigateToHome = {},
         onNavigateToRegister = {},
-        onNavigateToAdmin = {}
+        onNavigateToAdmin = {},
+        onNavigateToSetupGoal = {}
     )
 }
