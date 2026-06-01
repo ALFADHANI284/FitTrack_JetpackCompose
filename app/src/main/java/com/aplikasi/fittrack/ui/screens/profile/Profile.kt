@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.profile
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,24 +40,32 @@ import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onNavigateToLogin: () -> Unit
 ) {
     val user by viewModel.profileData
     val isLoading by viewModel.isLoading
+    val isGuest by viewModel.isGuest
+
+    LaunchedEffect(isGuest) {
+        if (isGuest) {
+            onNavigateToLogin()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.fetchProfile()
     }
 
-    // Lempar datanya ke komponen UI murni di bawah
-    ProfileContent(
-        user = user,
-        isLoading = isLoading,
-        onLogoutClick = onLogoutClick
-    )
+    if (!isGuest) {
+        ProfileContent(
+            user = user,
+            isLoading = isLoading,
+            onLogoutClick = onLogoutClick
+        )
+    }
 }
 
-// 2. Layar Stateless (Murni UI, tidak ada ViewModel di sini)
 @Composable
 fun ProfileContent(
     user: UserData?,
@@ -64,10 +73,7 @@ fun ProfileContent(
     onLogoutClick: () -> Unit
 ) {
     if (isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color(0xFFFFB200))
         }
     } else {
@@ -78,7 +84,7 @@ fun ProfileContent(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- Header ---
+            // --- Header Profil ---
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = "Profile Picture",
@@ -94,17 +100,36 @@ fun ProfileContent(
             Text(text = user?.name ?: "No Name", fontSize = 24.sp, fontWeight = FontWeight.Bold)
             Text(text = user?.email ?: "No Email", fontSize = 14.sp, color = Color.Gray)
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // --- Stats Kalori & Makro Nutrisi dari Laravel ---
+            // --- Stats Metrik Fisik (BARU) ---
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)), // Kasih warna beda dikit (Kuning muda)
+                border = BorderStroke(1.dp, Color(0xFFFFB200))
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    StatItem(label = "Berat", value = "${user?.weight ?: 0} kg")
+                    StatItem(label = "Tinggi", value = "${user?.height ?: 0} cm")
+
+                    // Ngerapihin tulisan goal (lose_weight jadi Lose Weight)
+                    val formattedGoal = user?.goal?.replace("_", " ")?.replaceFirstChar { it.uppercase() } ?: "-"
+                    StatItem(label = "Goal", value = formattedGoal)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // --- Stats Kalori & Akun ---
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem(label = "Target Kalori", value = "${user?.dailyCaloriesTarget ?: 0} kcal")
@@ -113,10 +138,6 @@ fun ProfileContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ... Tempat untuk Bagian Streak & Achievement yang kemarin ...
-
             Spacer(modifier = Modifier.weight(1f))
 
             // --- Tombol Logout ---
@@ -124,10 +145,7 @@ fun ProfileContent(
                 onClick = onLogoutClick,
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
                 shape = RoundedCornerShape(28.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .padding(bottom = 16.dp)
+                modifier = Modifier.fillMaxWidth().height(50.dp).padding(bottom = 16.dp)
             ) {
                 Text(text = "Logout", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
