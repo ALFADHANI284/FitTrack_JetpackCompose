@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.workouts
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,32 +49,36 @@ import com.aplikasi.fittrack.network.RetrofitClient
 @Composable
 fun CategoryWorkoutsScreen(
     categoryId: Int,
-    categoryName: String, // Misal: "Massive Upper Body"
+    categoryName: String,
     onNavigateBack: () -> Unit,
-    onWorkoutDetailClick: (Int) -> Unit // Lempar ID workout ke halaman detail
+    onWorkoutDetailClick: (Int) -> Unit
 ) {
     var workoutList by remember { mutableStateOf<List<WorkoutResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    val primaryYellow = Color(0xFFFFB200) // Warna tombol bawah
-    val cardBgColor = Color(0xFFF7F7F7) // Abu-abu super muda buat background card
-    val iconBgColor = Color(0xFF4A4A4A) // Abu-abu gelap buat kotak icon
+    val primaryYellow = Color(0xFFFFB200)
+    val cardBgColor = Color(0xFFF7F7F7)
+    val iconBgColor = Color(0xFF4A4A4A)
+
+    val context = LocalContext.current
 
     LaunchedEffect(categoryId) {
         try {
-            // TODO: Ganti pakai token user asli
-            val userToken = "Bearer TOKEN_USER_LU_DI_SINI"
+            val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+            val savedToken = sharedPref.getString("ACCESS_TOKEN", "") ?: ""
+
+            val userToken = "Bearer $savedToken"
 
             // Tembak API Get All Workouts
-            // Pastikan kamu udah punya fungsi getWorkouts() di ApiService.kt
             val response = RetrofitClient.instance.getWorkouts(userToken)
 
             if (response.status) {
-                // INI KUNCI FILTERNYA: Cuma ambil yang category_id nya sama!
+                // Filter berdasarkan kategori
                 workoutList = response.data.filter { it.category_id == categoryId }
             }
         } catch (e: Exception) {
-            // Handle error
+            e.printStackTrace()
+            println("ERROR KATEGORI: ${e.message}")
         } finally {
             isLoading = false
         }
