@@ -1,5 +1,6 @@
 package com.aplikasi.fittrack.ui.screens.workouts
 
+import android.content.Context
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -24,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Schedule
@@ -47,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.aplikasi.fittrack.model.WorkoutResponse
 import com.aplikasi.fittrack.network.RetrofitClient
+import com.aplikasi.fittrack.viewmodel.WorkoutDetailViewModel
+import java.util.Calendar
 import android.graphics.Color as AndroidColor
 
 @Composable
@@ -63,24 +68,60 @@ fun WorkoutDetailScreen(
 ) {
     val yellowTheme = Color(0xFFFFB300)
 
+    val context = LocalContext.current
+
+    val apiService = RetrofitClient.instance
+    val viewModel = remember { WorkoutDetailViewModel(apiService, context) }
+
     // State untuk menampung 1 data detail saja (makanya pakai tanda tanya '?' / bisa null saat loading)
     var workoutDetail by remember { mutableStateOf<WorkoutResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    // Ambil data waktu sekarang untuk default picker
+    val calendar = Calendar.getInstance()
+    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+    val currentMinute = calendar.get(Calendar.MINUTE)
+
+    // Setup Dialog Jam bawaan Android
+    val timePickerDialog = android.app.TimePickerDialog(
+        context,
+        { _, hourOfDay, minute ->
+            // Ketika user klik "OK" di pop-up jam, tembak API!
+            viewModel.addWorkoutSchedule(workoutId, hourOfDay, minute)
+        },
+        currentHour,
+        currentMinute,
+        true // Menggunakan format 24 jam
+    )
 
     // Ambil data saat layar dibuka
     LaunchedEffect(workoutId) {
+        // 👇 1. KITA PRINT DULU ID-NYA BIAR TAU NYANGKUT ATAU NGGAK
+        println("DEBUG_DETAIL: ID Workout yang diklik = $workoutId")
+
         try {
-            val userToken = "Bearer TOKEN_USER_LU_DI_SINI"
+            // 👇 2. AMBIL TOKEN ASLI LAGI DARI BRANKAS
+            val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+            val savedToken = sharedPref.getString("ACCESS_TOKEN", "") ?: ""
+            val userToken = "Bearer $savedToken"
+
+            println("DEBUG_DETAIL: Token dipake = $userToken")
 
             // Tembak API Get All Workouts
-            val response = RetrofitClient.instance.getWorkouts(userToken)
+            val response = apiService.getWorkouts(userToken)
 
             if (response.status) {
                 // Cari HANYA 1 data yang ID-nya sama dengan workoutId yang diklik
-                workoutDetail = response.data.find { it.id == workoutId }
+                val detail = response.data.find { it.id == workoutId }
+                workoutDetail = detail
+
+                // Set status tombol love
+                viewModel.setInitialFavoriteStatus(detail?.isFavorite ?: false)
+
+                println("DEBUG_DETAIL: Data ketemu = ${detail?.name}")
             }
         } catch (e: Exception) {
-            // Handle error
+            e.printStackTrace()
+            println("DEBUG_DETAIL: ERROR API -> ${e.message}")
         } finally {
             isLoading = false
         }
@@ -89,7 +130,18 @@ fun WorkoutDetailScreen(
     Scaffold(
         bottomBar = {
             // Kita kirim link YT-nya ke bottom bar siapa tau mau dipakai
-            WorkoutBottomBar(yellowTheme, workoutDetail?.link_yt)
+            WorkoutBottomBar(
+                workoutId = workoutDetail?.id ?: 0,
+                viewModel = viewModel,
+                themeColor = yellowTheme,
+                youtubeLink = workoutDetail?.link_yt,
+                onWatchTutorialClick = {
+                    timePickerDialog.show()
+                },
+                onViewScheduleClick = {
+                    timePickerDialog.show()
+                }
+            )
         },
         containerColor = Color.White
     ) { paddingValues ->
@@ -205,7 +257,17 @@ fun WorkoutDetailScreen(
 
 // --- KOMPONEN BOTTOM BAR ---
 @Composable
-fun WorkoutBottomBar(themeColor: Color, youtubeLink: String?) {
+fun WorkoutBottomBar(
+    workoutId: Int,
+    viewModel: WorkoutDetailViewModel,
+    themeColor: Color,
+    youtubeLink: String?,
+    onWatchTutorialClick: () -> Unit,
+    onViewScheduleClick: () -> Unit
+) {
+    val isFavorite by viewModel.isFavorite
+    val isLoadingFavorite by viewModel.isLoadingFavorite
+
     Surface(
         shadowElevation = 16.dp,
         color = Color.White,
@@ -217,18 +279,39 @@ fun WorkoutBottomBar(themeColor: Color, youtubeLink: String?) {
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 1. TOMBOL FAVORITE (LOVE)
             IconButton(
-                onClick = { /* TODO: Toggle Favorite */ },
-                modifier = Modifier.size(56.dp).border(2.dp, Color.LightGray, RoundedCornerShape(16.dp))
+                onClick = { viewModel.toggleFavorite(workoutId) },
+                enabled = !isLoadingFavorite, // Di-disable sementara kalau API lagi loading
+                modifier = Modifier
+                    .size(56.dp)
+                    .border(
+                        width = 2.dp,
+                        // Berubah warna border kalau aktif
+                        color = if (isFavorite) Color(0xFFFF4A4A) else Color.LightGray,
+                        shape = RoundedCornerShape(16.dp)
+                    )
             ) {
-                Icon(Icons.Default.FavoriteBorder, contentDescription = "Favorite", tint = Color.Gray, modifier = Modifier.size(28.dp))
+                Icon(
+                    // Berganti ikon berdasarkan state isFavorite
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    // Warna icon berubah merah solid saat ter-favorit
+                    tint = if (isFavorite) Color(0xFFFF4A4A) else Color.Gray,
+                    modifier = Modifier.size(28.dp)
+                )
             }
 
             Spacer(modifier = Modifier.width(16.dp))
 
+            // 2. TOMBOL AKSI UTAMA
             Button(
                 onClick = {
-                    // TODO: Jika youtubeLink tidak null, buka ke browser/youtube
+                    if (!youtubeLink.isNullOrEmpty()) {
+                        onWatchTutorialClick()
+                    } else {
+                        onViewScheduleClick()
+                    }
                 },
                 modifier = Modifier
                     .weight(1f)
@@ -237,7 +320,7 @@ fun WorkoutBottomBar(themeColor: Color, youtubeLink: String?) {
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = if (!youtubeLink.isNullOrEmpty()) "Watch Tutorial" else "View Schedule",
+                    text = "Set Workout Schedule",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = Color.Black
@@ -339,6 +422,8 @@ fun YoutubeVideoPlayer(youtubeUrl: String, modifier: Modifier = Modifier) {
         }
     )
 }
+
+
 //@Preview(showBackground = true)
 //@Composable
 //fun WorkoutDetailPreview() {
