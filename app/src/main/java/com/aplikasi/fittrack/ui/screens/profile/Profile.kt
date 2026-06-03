@@ -56,7 +56,7 @@ fun ProfileScreen(
     LaunchedEffect(Unit) {
         viewModel.fetchProfile()
     }
-
+   //
     if (!isGuest) {
         ProfileContent(
             user = user,
@@ -64,6 +64,7 @@ fun ProfileScreen(
             onLogoutClick = onLogoutClick
         )
     }
+    //
 }
 
 @Composable
@@ -170,7 +171,7 @@ fun StatItem(label: String, value: String) {
 fun ProfileScreenPreviewLoading() {
     ProfileContent(
         user = null,
-        isLoading = true, // Ubah jadi false kalau mau ngetes tampilan tanpa loading
+        isLoading = false, // Ubah jadi false kalau mau ngetes tampilan tanpa loading
         onLogoutClick = {}
     )
 }

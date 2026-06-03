@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.model.LoginRequest
 import com.aplikasi.fittrack.network.RetrofitClient
 import kotlinx.coroutines.launch
+import com.aplikasi.fittrack.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +82,7 @@ fun LoginScreen(
 
         // 2. Logo Aplikasi
         Image(
-            painter = painterResource(id = android.R.drawable.ic_menu_camera),
+            painter = painterResource(id = R.drawable.logo),
             contentDescription = "App Logo",
             contentScale = ContentScale.Fit,
             modifier = Modifier

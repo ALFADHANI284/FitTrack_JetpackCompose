@@ -51,8 +51,13 @@ fun SearchScreen(
 
     Scaffold(
         bottomBar = {
-            CustomBottomNavigation(onNavigateToProfile = onNavigateToProfile,
-                                   onNavigateToCategories = onNavigateToCategories)
+            CustomBottomNavigation(
+                currentScreen = "search", // Jika eror merah, sesuaikan tipe datanya (misal: Screen.Search atau sejenisnya)
+                onNavigateToHome = { },
+                onNavigateToSearch = { },
+                onNavigateToProfile = onNavigateToProfile,
+                onNavigateToCategories = onNavigateToCategories
+            )
         },
         containerColor = Color.White
     ) { paddingValues ->
