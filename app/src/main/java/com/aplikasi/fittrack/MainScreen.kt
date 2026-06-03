@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
@@ -52,6 +55,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.model.ReviewUIModel
 import com.aplikasi.fittrack.network.RetrofitClient
 import com.aplikasi.fittrack.ui.FitAiChatSheet
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
@@ -68,7 +72,9 @@ import com.aplikasi.fittrack.ui.screens.workouts.SearchScreen
 import com.aplikasi.fittrack.ui.screens.workouts.UpperBodyScreen
 import com.aplikasi.fittrack.ui.screens.workouts.WorkoutDetailScreen
 import com.aplikasi.fittrack.ui.setup.OnboardingHostScreen
+import com.aplikasi.fittrack.viewmodel.HomeViewModel
 import com.aplikasi.fittrack.viewmodel.ProfileViewModel
+import com.aplikasi.fittrack.viewmodel.SearchViewModel
 
 class MainScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,7 +103,21 @@ class MainScreen : ComponentActivity() {
                 )
             }
 
-            // 👇 SCAFFOLD UTAMA (BINGKAI APLIKASI)
+            val homeViewModel = remember {
+                HomeViewModel(
+                    apiService = apiService,
+                    context = context.applicationContext
+                )
+            }
+
+            val searchViewModel = remember {
+                SearchViewModel(
+                    apiService = apiService,
+                    context = context.applicationContext
+                )
+            }
+
+            // SCAFFOLD UTAMA (BINGKAI APLIKASI)
             Scaffold(
                 bottomBar = {
                     // Navbar cuma muncul di layar utama
@@ -113,7 +133,7 @@ class MainScreen : ComponentActivity() {
                 }
             ) { innerPadding ->
 
-                // 👇 LAYAR TV (KONTEN YANG BERUBAH-UBAH)
+                //  LAYAR TV (KONTEN YANG BERUBAH-UBAH)
                 Box(modifier = Modifier.padding(innerPadding)) {
                     when (currentScreen) {
                         "onboarding" -> {
@@ -141,9 +161,12 @@ class MainScreen : ComponentActivity() {
                                 onFinishOnboarding = { currentScreen = "home" }
                             )
                         }
+
+                        //  UPDATE: Cuma nambahin parameter homeViewModel ke HomeScreen
                         "home" -> {
                             HomeScreen(
-                                viewModel = profileViewModel,
+                                profileViewModel = profileViewModel, // Ganti nama dikit menyesuaikan HomeScreen baru
+                                homeViewModel = homeViewModel,       // Masukin viewmodel streak & analytics
                                 onBodyFocusClick = { id, name ->
                                     selectedCategoryId = id
                                     selectedCategoryName = name
@@ -151,10 +174,16 @@ class MainScreen : ComponentActivity() {
                                 }
                             )
                         }
+
                         "search" -> {
                             SearchScreen(
+                                viewModel = searchViewModel,
                                 onNavigateToProfile = { currentScreen = "profile" },
-                                onNavigateToCategories = { currentScreen = "categories" }
+                                onNavigateToCategories = { currentScreen = "categories" },
+                                onNavigateToDetail = { workoutId ->
+                                    selectedWorkoutId = workoutId
+                                    currentScreen = "workout_detail"
+                                }
                             )
                         }
                         "categories" -> {
@@ -250,7 +279,8 @@ class MainScreen : ComponentActivity() {
 // --- HOME SCREEN ---
 @Composable
 fun HomeScreen(
-    viewModel: ProfileViewModel,
+    profileViewModel: ProfileViewModel,
+    homeViewModel: HomeViewModel, // Tambahan parameter
     onBodyFocusClick: (Int, String) -> Unit,
 ) {
     var showAiChat by remember { mutableStateOf(false) }
@@ -259,14 +289,33 @@ fun HomeScreen(
     val sharedPreferences = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
     val savedToken = sharedPreferences.getString("ACCESS_TOKEN", "") ?: ""
 
-    val user by viewModel.profileData
+    // State dari Profile
+    val user by profileViewModel.profileData
     val namaUser = user?.name ?: "User"
 
+    // Tarik State dari HomeViewModel
+    val streakDays by homeViewModel.streakDays
+    val isWorkoutToday by homeViewModel.isWorkoutToday
+    val analyticsData by homeViewModel.analyticsData
+
+
+    val weeklyHistory by homeViewModel.weeklyWorkoutCounts
+    val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+
+    val favoritesList by homeViewModel.favoriteWorkouts
+
+    val currentWeight by homeViewModel.currentWeight
+    val weightDiff by homeViewModel.weightDifferenceText
+
+    val reviewsList by homeViewModel.userReviews
+
+
+    // Panggil API pas layar dibuka
     LaunchedEffect(Unit) {
-        viewModel.fetchProfile()
+        profileViewModel.fetchProfile()
+        homeViewModel.loadAllHomeData() // Muat streak & analytics
     }
 
-    // Scaffold di sini cuma buat tombol Floating AI
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
@@ -287,14 +336,25 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // HEADER
-            Text(
-                text = "HOME",
+            // HEADER DENGAN STREAK
+            Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-                textAlign = TextAlign.Center,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold
-            )
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "HOME",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                // UI Streak Dinamis
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val fireColor = if (isWorkoutToday) Color(0xFFFF4500) else Color(0xFFD3D3D3)
+                    Icon(Icons.Default.LocalFireDepartment, contentDescription = "Streak", tint = fireColor, modifier = Modifier.size(24.dp))
+                    Text(text = "$streakDays Days", fontWeight = FontWeight.Bold, color = fireColor, modifier = Modifier.padding(start = 4.dp))
+                }
+            }
+
             Text(text = "Tue 04 Nov", color = Color(0xFFA3A3A3), fontSize = 12.sp)
             Text(
                 text = "Good Morning $namaUser",
@@ -314,35 +374,57 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
+
+                    // --- Header Grafik ---
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.LocalFireDepartment, contentDescription = "Calorie", tint = Color.Red, modifier = Modifier.size(22.dp))
-                            Text("Calories", fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                            Icon(
+                                imageVector = Icons.Default.LocalFireDepartment,
+                                contentDescription = "Workout History",
+                                tint = Color.Red,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Text(
+                                text = "Workout History",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
                         }
-                        Text("Week ▾", fontSize = 14.sp, color = Color.Gray)
+                        Text(text = "Week ▾", fontSize = 14.sp, color = Color.Gray)
                     }
 
+                    // --- Grafik Batang ---
                     Row(
-                        modifier = Modifier.fillMaxWidth().height(70.dp).padding(top = 8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(70.dp)
+                            .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        BarItem("Sun", 20, Color(0xFFE6E6E6))
-                        BarItem("Mon", 28, Color(0xFFE6E6E6))
-                        BarItem("Tue", 42, Color(0xFFFFB200))
-                        BarItem("Wed", 30, Color(0xFFE6E6E6))
-                        BarItem("Thu", 26, Color(0xFFE6E6E6))
-                        BarItem("Fri", 24, Color(0xFFE6E6E6))
-                        BarItem("Sat", 18, Color(0xFFE6E6E6))
+                        // Sekarang days dan weeklyHistory udah kebaca di sini!
+                        days.forEachIndexed { index, day ->
+                            val workoutCount = weeklyHistory.getOrNull(index) ?: 0
+                            val barValue = (workoutCount * 12).coerceAtMost(70)
+                            val barColor = if (workoutCount > 0) Color(0xFFFFB200) else Color(0xFFE6E6E6)
+
+                            // Pilih salah satu (tergantung BarItem lu nerima Int atau Dp)
+                            BarItem(
+                                day = day,
+                                height = if (barValue == 0) 5 else barValue, // Ganti jadi 5.dp dan barValue.dp kalau merah
+                                color = barColor
+                            )
+                        }
                     }
                 }
             }
 
-            // FEATURED PLAN
+            // FEATURED PLAN (Body Focus)
             SectionTitle(title = "Body Focus", modifier = Modifier.padding(top = 20.dp))
             Row(
                 modifier = Modifier
@@ -370,8 +452,8 @@ fun HomeScreen(
                 ) { Text("Full Body", fontWeight = FontWeight.Bold) }
             }
 
-            // CHALLENGES
-            SectionTitle(title = "Challenges", modifier = Modifier.padding(top = 20.dp))
+            // Favorites
+            SectionTitle(title = "My Favorites", modifier = Modifier.padding(top = 20.dp))
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -379,8 +461,13 @@ fun HomeScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                ChallengeCard("5K Run Challenge - Join Now!")
-                ChallengeCard("30 Day Plank – Start Today")
+                favoritesList.forEach { favorite ->
+                    // Panggil FavoriteCard lu dengan isi dari loop API
+                    FavoriteCard(
+                        title = favorite.first,       // Mengambil judul workout
+                        duration = favorite.second    // Mengambil durasi workout
+                    )
+                }
             }
 
             // PROGRESS
@@ -391,8 +478,23 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFB200))
             ) {
                 Column(modifier = Modifier.padding(18.dp).fillMaxSize()) {
-                    Text("67.5KG", color = Color(0xFF0F0B0B), fontSize = 36.sp, fontWeight = FontWeight.Bold)
-                    Text("↓ 2.5kg this week", fontSize = 14.sp, color = Color.Black, modifier = Modifier.padding(top = 4.dp))
+
+                    // Panggil state angkanya di sini
+                    Text(
+                        text = currentWeight,
+                        color = Color(0xFF0F0B0B),
+                        fontSize = 36.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    // Panggil state naik/turunnya di sini
+                    Text(
+                        text = weightDiff,
+                        fontSize = 14.sp,
+                        color = Color.Black,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
                     Text(
                         text = "View History",
                         fontSize = 14.sp,
@@ -404,8 +506,25 @@ fun HomeScreen(
                 }
             }
         }
+        // Tampilkan bagian ini HANYA kalau datanya ada (nggak kosong)
+        if (reviewsList.isNotEmpty()) {
+            // Header Section
+            SectionTitle(title = "Recent App Reviews", modifier = Modifier.padding(top = 24.dp))
 
-        // POP-UP FIT AI
+            // List Review
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Ambil maksimal 3 data terbaru pakai .take(3)
+                reviewsList.take(3).forEach { review ->
+                    ReviewItemCard(review = review)
+                }
+            }
+        }
+
         if (showAiChat) {
             FitAiChatSheet(
                 token = "Bearer $savedToken",
@@ -414,7 +533,50 @@ fun HomeScreen(
         }
     }
 }
+@Composable
+fun ReviewItemCard(review: ReviewUIModel) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)), // Abu-abu super muda
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE)) // Garis tepi tipis biar tegas
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Deretan Bintang Rating
+                Row {
+                    repeat(review.rating) {
+                        Text(text = "⭐", fontSize = 14.sp)
+                    }
+                }
 
+                // Label kecil penanda ini review dari dia sendiri
+                Box(
+                    modifier = Modifier
+                        .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(4.dp))
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(text = "My Review", fontSize = 10.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Teks Ulasan
+            Text(
+                text = "\"${review.reviewText}\"",
+                fontSize = 14.sp,
+                color = Color.DarkGray,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                lineHeight = 20.sp
+            )
+        }
+    }
+}
 // --- KOMPONEN NAVIGASI & BANTUAN UTAMA ---
 @Composable
 fun CustomBottomNavigation(
@@ -495,9 +657,39 @@ fun BarItem(day: String, height: Int, color: Color) {
 }
 
 @Composable
-fun ChallengeCard(title: String) {
-    Column(modifier = Modifier.width(180.dp)) {
-        Box(modifier = Modifier.fillMaxWidth().height(110.dp).clip(RoundedCornerShape(8.dp)).background(Color.Gray))
-        Text(text = title, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Black, modifier = Modifier.padding(top = 8.dp))
+fun FavoriteCard(title: String, duration: String) {
+    Card(
+        modifier = Modifier
+            .width(160.dp)
+            .height(110.dp)
+            .clickable { /* TODO: Arahin ke Workout Detail */ },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                Icons.Default.Favorite,
+                contentDescription = "Favorite",
+                tint = Color.Red,
+                modifier = Modifier.size(24.dp).padding(bottom = 8.dp)
+            )
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+            Text(
+                text = duration,
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+        }
     }
 }
