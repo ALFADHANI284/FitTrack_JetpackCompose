@@ -88,10 +88,11 @@ class WorkoutDetailViewModel(
                 )
                 val response = apiService.createSchedule(token, request)
 
-                if (response.isSuccessful && response.body()?.status == true) {
-                    Toast.makeText(context, "Jadwal berhasil disimpan! ⏰", Toast.LENGTH_SHORT).show()
+
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "Jadwal berhasil disimpan!", Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "Gagal membuat jadwal: ${response.message()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Gagal membuat jadwal: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
