@@ -4,7 +4,18 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -13,8 +24,23 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -26,6 +52,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.aplikasi.fittrack.model.ReferralRequest
 import com.aplikasi.fittrack.model.RegisterRequest
 import com.aplikasi.fittrack.network.RetrofitClient
 import kotlinx.coroutines.launch
@@ -39,6 +66,7 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var referralCode by remember { mutableStateOf("") }
 
     // 2. STATE UI: Untuk toggle password dan loading API
     var passwordVisible by remember { mutableStateOf(false) }
@@ -194,6 +222,17 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = referralCode,
+                    onValueChange = { referralCode = it },
+                    label = { Text("Kode Referral (Opsional)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = textFieldColors,
+                    shape = RoundedCornerShape(12.dp)
+                )
+
                 Spacer(modifier = Modifier.height(32.dp))
 
                 // 5. TOMBOL REGISTER DENGAN LOGIKA API
@@ -223,29 +262,62 @@ fun RegisterScreen(onNavigateToLogin: () -> Unit) {
                                 val request = RegisterRequest(
                                     name = fullName,
                                     email = email,
-                                    password = password
+                                    password = password,
+                                    passwordConfirmation = confirmPassword
                                 )
+
+                                // 1. Tembak API Register
+                                // (Kalau gagal, dia otomatis lompat ke catch HttpException di bawah)
                                 val response = RetrofitClient.instance.registerUser(request)
 
-                                // MUNCULIN NOTIF TOAST
-                                Toast.makeText(context, "Registrasi berhasil! Silakan login.", Toast.LENGTH_LONG).show()
+                                // --- KALAU BARIS INI KE-BACA, BERARTI REGISTER SUKSES 100% ---
 
-                                // PINDAH KE HALAMAN LOGIN
+                                // 2. Eksekusi Referral Code
+                                if (referralCode.isNotBlank()) {
+                                    try {
+                                        val token = "Bearer ${response.token}"
+
+                                        val refReq = ReferralRequest(referralCode)
+
+                                        // Panggil endpoint redeem
+                                        val redeemResponse = RetrofitClient.instance.redeemReferral(token, refReq)
+
+                                        if (redeemResponse.isSuccessful) {
+                                            println("DEBUG: Kode Referral Berhasil Ditebus!")
+                                        } else {
+                                            println("DEBUG: Kode Referral Gagal Ditebus (Kode salah/invalid)")
+                                        }
+                                    } catch (e: Exception) {
+                                        // Biarin aja diem, user tetep lanjut
+                                        println("DEBUG: Error Network Referral - ${e.message}")
+                                    }
+                                }
+
+                                // 3. Sukses total, munculin notif dan pindah ke Login
+                                Toast.makeText(context, "Registrasi berhasil! Silakan login.", Toast.LENGTH_LONG).show()
                                 onNavigateToLogin()
 
                             } catch (e: retrofit2.HttpException) {
-                                // 1. Ambil body errornya
+                                // --- TANGKAP OMELAN LARAVEL DI SINI ---
                                 val errorBody = e.response()?.errorBody()?.string()
 
-                                // 2. Coba bongkar JSON-nya
                                 val displayMessage = try {
-                                    val jsonObject = org.json.JSONObject(errorBody)
-                                    jsonObject.getString("message")
+                                    val jsonObject = org.json.JSONObject(errorBody ?: "")
+
+                                    // Cek apakah Laravel ngasih detail error di array "errors"
+                                    if (jsonObject.has("errors")) {
+                                        val errors = jsonObject.getJSONObject("errors")
+                                        val firstKey = errors.keys().next() // Ambil error urutan pertama
+                                        errors.getJSONArray(firstKey).getString(0)
+                                    } else {
+                                        // Kalau gak ada, ambil message umum
+                                        jsonObject.getString("message")
+                                    }
                                 } catch (parseException: Exception) {
                                     "Terjadi kesalahan server (Kode: ${e.code()})"
                                 }
 
-                                registerMessage = "Gagal: $displayMessage"
+                                registerMessage = "Gagal: $displayMessage" // Tampilkan alasan gagal ke UI lu
 
                             } catch (e: Exception) {
                                 registerMessage = "Gagal: Koneksi terputus atau server mati."

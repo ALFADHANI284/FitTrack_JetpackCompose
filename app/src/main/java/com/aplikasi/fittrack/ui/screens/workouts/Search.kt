@@ -2,6 +2,7 @@ package com.aplikasi.fittrack.ui.screens.workouts
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,10 +23,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,28 +42,30 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aplikasi.fittrack.CustomBottomNavigation
+import com.aplikasi.fittrack.model.WorkoutResponse
+import com.aplikasi.fittrack.viewmodel.SearchViewModel
 
 @Composable
 fun SearchScreen(
-    onNavigateToProfile: () -> Unit, // Parameter untuk Bottom Navigation
-    onNavigateToCategories: () -> Unit
+    viewModel: SearchViewModel,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToCategories: () -> Unit,
+    onNavigateToDetail: (Int) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
+    // Tarik state dari ViewModel
+    val searchResults by viewModel.searchResults
+    val isLoading by viewModel.isLoading
+
+    // Pemicu otomatis tiap kali text berubah
+    LaunchedEffect(searchQuery) {
+        viewModel.performSearch(searchQuery)
+    }
+
     Scaffold(
-        bottomBar = {
-            CustomBottomNavigation(
-                currentScreen = "search", // Jika eror merah, sesuaikan tipe datanya (misal: Screen.Search atau sejenisnya)
-                onNavigateToHome = { },
-                onNavigateToSearch = { },
-                onNavigateToProfile = onNavigateToProfile,
-                onNavigateToCategories = onNavigateToCategories
-            )
-        },
         containerColor = Color.White
     ) { paddingValues ->
         Column(
@@ -75,10 +82,8 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
+                    .border(1.dp, Color.Black, RoundedCornerShape(25.dp)) // Tambahan border neo-brutalist
                     .background(Color.White, shape = RoundedCornerShape(25.dp))
-                    .clip(RoundedCornerShape(25.dp))
-                    // Bikin border tipis hitam ala desain mockup
-                    .background(Color.White)
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -87,7 +92,7 @@ fun SearchScreen(
 
                 Box(modifier = Modifier.weight(1f)) {
                     if (searchQuery.isEmpty()) {
-                        Text("Search...", color = Color.Gray, fontSize = 16.sp)
+                        Text("Search workouts...", color = Color.Gray, fontSize = 16.sp)
                     }
                     BasicTextField(
                         value = searchQuery,
@@ -97,64 +102,122 @@ fun SearchScreen(
                     )
                 }
 
-                Icon(
-                    Icons.Default.Close,
-                    contentDescription = "Clear",
-                    tint = Color.Black,
-                    modifier = Modifier.clickable { searchQuery = "" }
+                if (searchQuery.isNotEmpty()) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = Color.Black,
+                        modifier = Modifier.clickable { searchQuery = "" }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(30.dp))
+
+            // 2. LOGIKA TAMPILAN DINAMIS
+            if (searchQuery.isNotEmpty()) {
+                // --- MODE PENCARIAN AKTIF ---
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFFFB200))
+                    }
+                } else if (searchResults.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                        Text("Pencarian tidak ditemukan", color = Color.Gray)
+                    }
+                } else {
+                    Text("Search Results", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Looping daftar hasil pencarian
+                    searchResults.forEach { workout ->
+                        SearchResultItem(workout = workout, onClick = { onNavigateToDetail(workout.id) })
+                    }
+                }
+            } else {
+                // --- MODE DEFAULT (KOSONG) ---
+
+                // RECENT SEARCH SECTION
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Recent search", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                    Text("See all", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.clickable { })
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                RecentSearchItem("Pilates")
+                RecentSearchItem("Cardio")
+                RecentSearchItem("Strength Training")
+
+                Spacer(modifier = Modifier.height(30.dp))
+
+                // BROWSE ALL SECTION
+                Text("Browse all", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                BrowseCard(
+                    title = "Full Body",
+                    subtitle = "24 Workouts Progress",
+                    backgroundColor = Color(0xFFA1CFFB) // Biru Muda
+                )
+                BrowseCard(
+                    title = "Upper Body",
+                    subtitle = "18 Workouts Progress",
+                    backgroundColor = Color(0xFFCDB4F3) // Ungu Muda
+                )
+                BrowseCard(
+                    title = "Lower Body",
+                    subtitle = "15 Workouts Progress",
+                    backgroundColor = Color(0xFFF3B4D4) // Pink Muda
                 )
             }
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // 2. RECENT SEARCH SECTION
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Recent search", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-                Text("See all", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.clickable { })
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // List Recent Search
-            RecentSearchItem("Pilates")
-            RecentSearchItem("Studio in New York")
-            RecentSearchItem("Martial Arts")
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            // 3. BROWSE ALL SECTION
-            Text("Browse all", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // List Cards
-            BrowseCard(
-                title = "Full Body",
-                subtitle = "24 Workouts Progress",
-                backgroundColor = Color(0xFFA1CFFB) // Biru Muda
-            )
-            BrowseCard(
-                title = "Upper Body",
-                subtitle = "18 Workouts Progress",
-                backgroundColor = Color(0xFFCDB4F3) // Ungu Muda
-            )
-            BrowseCard(
-                title = "Lower Body",
-                subtitle = "15 Workouts Progress",
-                backgroundColor = Color(0xFFF3B4D4) // Pink Muda
-            )
 
             Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
-// --- KOMPONEN BANTUAN UNTUK SEARCH SCREEN ---
+// --- KOMPONEN BANTUAN ---
+// (RecentSearchItem dan BrowseCard biarkan sama persis seperti kodingan asli lu)
 
+// Komponen baru untuk nampilin item hasil pencarian
+@Composable
+fun SearchResultItem(workout: WorkoutResponse, onClick: () -> Unit) {
+
+    val categoryName = when (workout.category_id) {
+        1 -> "Full Body"
+        2 -> "Upper Body"
+        3 -> "Lower Body"
+        else -> "General Workout"
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 12.dp)
+            .clickable { onClick() }
+            .border(1.dp, Color.Black, RoundedCornerShape(12.dp)),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F7F7)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = workout.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = categoryName, fontSize = 12.sp, color = Color.DarkGray)
+            }
+            Icon(Icons.Default.Search, contentDescription = "Go", tint = Color.Gray)
+        }
+    }
+}
 @Composable
 fun RecentSearchItem(text: String) {
     Row(
@@ -194,7 +257,6 @@ fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
                 Text(text = subtitle, fontSize = 12.sp, color = Color.DarkGray)
             }
 
-            // TODO: Ganti android.R.drawable.ic_menu_gallery dengan gambar aset kamu (misal: R.drawable.img_strength)
             Image(
                 painter = painterResource(id = android.R.drawable.ic_menu_gallery),
                 contentDescription = title,
@@ -204,13 +266,13 @@ fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
     }
 }
 
-@Preview(showBackground = true, device = "id:pixel_5")
-@Composable
-fun SearchScreenPreview() {
-    // Kamu bisa membungkusnya dengan Tema aplikasimu jika ada,
-    // misal: FitTrackTheme { ... }
-    SearchScreen(
-        onNavigateToProfile = {  },
-        onNavigateToCategories = {  }
-    )
-}
+//@Preview(showBackground = true, device = "id:pixel_5")
+//@Composable
+//fun SearchScreenPreview() {
+//    // Kamu bisa membungkusnya dengan Tema aplikasimu jika ada,
+//    // misal: FitTrackTheme { ... }
+//    SearchScreen(
+//        onNavigateToProfile = {  },
+//        onNavigateToCategories = {  }
+//    )
+//}

@@ -7,6 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.aplikasi.fittrack.model.UserData
 import com.aplikasi.fittrack.network.ApiService
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import java.io.File
 
 class ProfileViewModel(
     private val apiService: ApiService,
@@ -53,6 +57,59 @@ class ProfileViewModel(
                 }
             } finally {
                 isLoading.value = false
+            }
+        }
+    }
+
+    private fun getToken(): String {
+        val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
+        val savedToken = sharedPref.getString("ACCESS_TOKEN", "") ?: ""
+        return if (savedToken.startsWith("Bearer ")) savedToken else "Bearer $savedToken"
+    }
+
+    fun uploadFotoProfil(fileGambar: File) {
+        viewModelScope.launch {
+            val token = getToken()
+
+            try {
+                // 1. Definisikan tipe file pakai cara klasik yang lebih aman
+                val mediaType = MediaType.parse("image/jpeg")
+
+                // 2. Ubah file jadi RequestBody
+                val requestFile = RequestBody.create(mediaType, fileGambar)
+
+                // 3. Bungkus jadi MultipartBody.Part (PENTING: Nama "avatar" wajib sama kayak di Laravel)
+                val body = MultipartBody.Part.createFormData("avatar", fileGambar.name, requestFile)
+
+                // 4. Tembak API
+                val response = apiService.uploadAvatar(token, body)
+
+                if (response.isSuccessful) {
+                    println("FOTO SUKSES DIUPLOAD!")
+                } else {
+                    println("GAGAL UPLOAD: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    fun finishWorkout(workoutId: Int) {
+        viewModelScope.launch {
+            val token = getToken()
+
+            try {
+                // Tembak API History biar dicatat Laravel
+                val response = apiService.saveWorkoutHistory(token, workoutId)
+
+                if (response.isSuccessful) {
+                    println("HISTORY BERHASIL DICATAT!")
+                    // TODO: Arahkan user pindah halaman ke layar "Selamat!" atau balik ke Home
+                } else {
+                    println("GAGAL NYATET HISTORY: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
