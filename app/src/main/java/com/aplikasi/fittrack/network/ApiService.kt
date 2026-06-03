@@ -26,6 +26,7 @@ import com.aplikasi.fittrack.model.RegisterRequest
 import com.aplikasi.fittrack.model.ReminderListResponse
 import com.aplikasi.fittrack.model.ReminderRequest
 import com.aplikasi.fittrack.model.ReminderSingleResponse
+import com.aplikasi.fittrack.model.ReviewRequest
 import com.aplikasi.fittrack.model.ScheduleListResponse
 import com.aplikasi.fittrack.model.ScheduleRequest
 import com.aplikasi.fittrack.model.ScheduleResponse
@@ -36,6 +37,7 @@ import com.aplikasi.fittrack.model.UserPointsResponse
 import com.aplikasi.fittrack.model.WorkoutRequest
 import com.aplikasi.fittrack.model.WorkoutResponse
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -130,6 +132,11 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("workoutId") workoutId: Int
     ): Response<FavoriteResponse>
+
+    @GET("favorites")
+    suspend fun getFavoriteWorkouts(
+        @Header("Authorization") token: String
+    ): Response<ResponseBody>
 
     @DELETE("favorites/{workoutId}")
     suspend fun removeFromFavorite(
@@ -346,5 +353,18 @@ interface ApiService {
     suspend fun getUserStreak(
         @Header("Authorization") token: String
     ): Response<StreakResponse>
+
+    // ======================================================
+    // Reviews
+    // ======================================================
+    @POST("user/reviews")
+    suspend fun postReview(
+        @Header("Authorization") token: String,
+        @Body request: ReviewRequest
+    ): Response<ResponseBody>
+    @GET("user/reviews")
+    suspend fun getUserReviews(
+        @Header("Authorization") token: String
+    ): Response<ResponseBody>
 }
 
