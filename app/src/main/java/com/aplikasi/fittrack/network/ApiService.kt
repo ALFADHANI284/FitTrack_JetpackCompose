@@ -10,6 +10,7 @@ import com.aplikasi.fittrack.model.BaseResponse
 import com.aplikasi.fittrack.model.CategoryResponse
 import com.aplikasi.fittrack.model.DefaultResponse
 import com.aplikasi.fittrack.model.FavoriteResponse
+import com.aplikasi.fittrack.model.FinishWorkoutRequest
 import com.aplikasi.fittrack.model.GenericResponse
 import com.aplikasi.fittrack.model.HistoryListResponse
 import com.aplikasi.fittrack.model.LoginRequest
@@ -248,6 +249,12 @@ interface ApiService {
         @Path("id") historyId: Int
     ): Response<GenericResponse>
 
+    @POST("workout-history")
+    suspend fun saveWorkoutHistory(
+        @Header("Authorization") token: String,
+        @Body request: FinishWorkoutRequest
+    ): Response<ResponseBody>
+
     // ======================================================
     // REMINDERS
     // ======================================================
@@ -258,12 +265,19 @@ interface ApiService {
         @Header("Authorization") token: String
     ): Response<ReminderListResponse>
 
-    // 2. Ambil detail 1 alarm (opsional, jarang dipake kalau datanya udah dapet semua di list)
+    // 2. Ambil detail 1 alarm
     @GET("reminders/{id}")
     suspend fun getReminderDetail(
         @Header("Authorization") token: String,
         @Path("id") reminderId: Int
     ): Response<ReminderSingleResponse>
+
+    @PUT("reminders/{id}")
+    suspend fun updateReminder(
+        @Header("Authorization") token: String,
+        @Path("id") reminderId: Int,
+        @Body request: ScheduleRequest
+    ): Response<ResponseBody>
 
     // 3. Bikin alarm baru
     @POST("reminders")
