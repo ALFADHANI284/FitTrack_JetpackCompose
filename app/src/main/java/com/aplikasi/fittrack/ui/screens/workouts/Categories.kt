@@ -1,3 +1,4 @@
+package com.aplikasi.fittrack.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -43,35 +45,30 @@ import com.aplikasi.fittrack.network.RetrofitClient
 @Composable
 fun UserCategoryScreen(
     onNavigateBack: () -> Unit,
-    onCategoryClick: (Int) -> Unit // Fungsi buat mindahin user ke halaman detail sesuai ID
+    onCategoryClick: (Int) -> Unit
 ) {
     val context = LocalContext.current
 
-    // State penampung data dari Database
+    // 🔒 LOGIC AMAN 100%
     var categories by remember { mutableStateOf<List<CategoryResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // Daftar warna pastel untuk background Card (akan di-loop otomatis)
-    val cardColors = listOf(
-        Color(0xFFA1CFFB), // Biru Muda
-        Color(0xFFCDB4F3), // Ungu Muda
-        Color(0xFFF3B4D4), // Pink Muda
-        Color(0xFFFDE0A6), // Oranye/Kuning Muda
-        Color(0xFFA6EBC9)  // Hijau Muda
+    // 🎨 Warna Kuning & Amber Bold yang tegas dan solid biar kontrasnya dapet
+    val boldYellowColors = listOf(
+        Color(0xFFFFB200), // FitTrack Yellow Utama
+        Color(0xFFFFC107), // Amber Tegas
+        Color(0xFFFFA000)  // Gold Sporty
     )
 
-    // Tembak API saat halaman dibuka
     LaunchedEffect(Unit) {
         try {
-            // TODO: Ganti pakai token user lu yang login
             val userToken = "Bearer TOKEN_USER_LU_DI_SINI"
-
             val response = RetrofitClient.instance.getCategories(userToken)
             if (response.status) {
                 categories = response.data
             }
         } catch (e: Exception) {
-            // Handle error kalau koneksi gagal
+            // Handle error
         } finally {
             isLoading = false
         }
@@ -83,7 +80,7 @@ fun UserCategoryScreen(
             .background(Color.White)
             .padding(horizontal = 24.dp)
     ) {
-        // --- HEADER ---
+        // --- 🍃 HEADER KONSISTEN POLOS ---
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
@@ -105,31 +102,32 @@ fun UserCategoryScreen(
             )
         }
 
-        // --- KONTEN LIST ---
+        // --- KONTEN LIST (Kembali ke baris penuh biar gak kosong pincang) ---
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFA1CFFB))
+                CircularProgressIndicator(color = Color(0xFFFFB200), strokeWidth = 4.dp)
             }
         } else if (categories.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Kategori belum tersedia.", color = Color.Gray)
+                Text(
+                    text = "Kategori belum tersedia.",
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 15.sp
+                )
             }
         } else {
-            // Pakai LazyColumn biar bisa di-scroll
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 80.dp)
+                contentPadding = PaddingValues(bottom = 32.dp),
+                modifier = Modifier.fillMaxSize()
             ) {
-                // Pakai itemsIndexed biar kita bisa ngambil index (urutan ke-berapa)
-                // Index ini dipakai buat nentuin warna Card-nya
                 itemsIndexed(categories) { index, category ->
-
-                    // Ambil warna secara bergantian dari list cardColors
-                    val color = cardColors[index % cardColors.size]
+                    val solidColor = boldYellowColors[index % boldYellowColors.size]
 
                     UserCategoryCard(
                         category = category,
-                        backgroundColor = color,
+                        backgroundColor = solidColor,
                         onClick = { onCategoryClick(category.id) }
                     )
                 }
@@ -138,7 +136,7 @@ fun UserCategoryScreen(
     }
 }
 
-// --- KOMPONEN BANTUAN UNTUK CARD KATEGORI ---
+// --- 🍃 SOLID BOLD ROW CARD DESIGN ---
 @Composable
 fun UserCategoryCard(
     category: CategoryResponse,
@@ -148,8 +146,8 @@ fun UserCategoryCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .height(115.dp) // Ukuran proporsional, penuh ke kanan, anti-kopong
+            .clip(RoundedCornerShape(22.dp))
             .background(backgroundColor)
             .clickable { onClick() }
     ) {
@@ -160,31 +158,44 @@ fun UserCategoryCard(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            // Sisi Teks Kiri
             Column(modifier = Modifier.weight(1f)) {
-                // Nama Kategori dari Database (Misal: Full Body)
                 Text(
                     text = category.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF111111) // Hitam pekat mantap
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Deskripsi dari Database
                 Text(
-                    text = category.description ?: "0 Workouts Progress",
+                    text = category.description ?: "Start your training plan now",
                     fontSize = 12.sp,
-                    color = Color.DarkGray,
-                    maxLines = 2
+                    color = Color(0xFF222222).copy(alpha = 0.8f), // Teks deskripsi gelap tegas
+                    maxLines = 2,
+                    lineHeight = 16.sp
                 )
             }
 
-            Image(
-                painter = painterResource(id = android.R.drawable.ic_menu_gallery),
-                contentDescription = category.name,
-                modifier = Modifier.size(80.dp)
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Sisi Ikon Kanan (Bunderan Putih Bersih yang Tegas)
+            Box(
+                modifier = Modifier
+                    .size(130.dp) // 🎯 Box dinaikkan jadi 130.dp biar sama kayak gambar
+                    .clip(CircleShape)
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = com.aplikasi.fittrack.R.drawable.cihuy),
+                    contentDescription = category.name,
+                    modifier = Modifier
+                        .fillMaxSize() // 🎯 Mengisi full 130.dp area Box
+                        .clip(CircleShape) // 🎯 Ini yang motong gambarnya jadi bulat ngikutin Box
+                )
+            }
         }
     }
 }

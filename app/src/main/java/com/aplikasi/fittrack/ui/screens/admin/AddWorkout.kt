@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -49,219 +50,242 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddWorkoutScreen(
-    onNavigateBack: () -> Unit // Fungsi buat kembali ke Dashboard Admin
+    onNavigateBack: () -> Unit
 ) {
-    // Warna sesuai tema Admin lu
+    // 🟡 Tema Warna Admin
     val primaryColor = Color(0xFFF5A300)
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // 1. STATE FORM INPUT (Menyimpan ketikan Admin)
+    // 🔒 LOGIC TEMEN LU (TIDAK DIUBAH SAMA SEKALI)
     var name: String by remember { mutableStateOf("") }
     var categoryId by remember { mutableStateOf("") }
     var duration by remember { mutableStateOf("") }
     var calories by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var linkYt by remember { mutableStateOf("") }
-
     var isLoading by remember { mutableStateOf(false) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()) // Wajib ada biar form bisa di-scroll
+            .background(Color(0xFFF8F9FA)) // Diubah jadi abu-abu soft agar layout punya depth / dimensi
     ) {
-        // Tombol Back & Judul
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Kembali",
-                tint = Color.Black,
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable { onNavigateBack() }
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "Tambah Gerakan",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        Text(
-            text = "Masukkan detail workout baru ke database",
-            fontSize = 16.sp,
-            color = Color.Gray,
-            modifier = Modifier.padding(bottom = 32.dp, start = 44.dp) // Digeser sejajar dengan judul
-        )
-
-        // Custom warna Outline biar senada sama tombol
-        val textFieldColors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = primaryColor,
-            unfocusedBorderColor = Color.Gray,
-            focusedLabelColor = primaryColor,
-            cursorColor = primaryColor
-        )
-
-        // --- FORM INPUTS ---
-
-        // 1. Nama Workout (Text)
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nama Gerakan (Contoh: Push Up)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = textFieldColors,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
-        )
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 2. Category ID (Number)
-            OutlinedTextField(
-                value = categoryId,
-                onValueChange = { categoryId = it },
-                label = { Text("ID Kategori") },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = textFieldColors,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-
-            // 3. Durasi (Number)
-            OutlinedTextField(
-                value = duration,
-                onValueChange = { duration = it },
-                label = { Text("Durasi (Menit)") },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = textFieldColors,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-        }
-
-        // 4. Kalori (Number)
-        OutlinedTextField(
-            value = calories,
-            onValueChange = { calories = it },
-            label = { Text("Kalori Terbakar (Kcal)") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = textFieldColors,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-        )
-
-        // 5. Link Youtube (Text)
-        OutlinedTextField(
-            value = linkYt, // Ganti dengan state variabel link_yt kamu
-            onValueChange = { linkYt = it },
-            label = { Text("Link YouTube") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = textFieldColors,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri) // Keyboard khusus URL
-        )
-
-        // 6. Deskripsi (Text - Multiline)
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Deskripsi / Cara Melakukan") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(120.dp) // Dibikin lebih tinggi karena deskripsi
-                .padding(bottom = 32.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = textFieldColors,
-            maxLines = 4
-        )
-
-        // Spacer dorong tombol ke bawah (Opsional kalau layarnya panjang)
-        Spacer(modifier = Modifier.weight(1f, fill = false))
-
-        // --- TOMBOL SIMPAN ---
-        Button(
-            onClick = {
-                // Validasi Kosong
-                if (name.isBlank() || categoryId.isBlank() || duration.isBlank() || calories.isBlank() || description.isBlank()) {
-                    Toast.makeText(context, "Semua kolom wajib diisi!", Toast.LENGTH_SHORT).show()
-                    return@Button
+            // --- HEADER SECTION ---
+            Spacer(modifier = Modifier.height(24.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(Color.White, shape = RoundedCornerShape(10.dp))
+                        .clickable { onNavigateBack() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Kembali",
+                        tint = Color.Black,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
-
-                isLoading = true
-
-                coroutineScope.launch {
-                    try {
-                        val request = WorkoutRequest(
-                            category_id = categoryId.toIntOrNull() ?: 1,
-                            name = name,
-                            duration_minutes = duration.toIntOrNull() ?: 0,
-                            calories_burned = calories.toIntOrNull() ?: 0,
-                            description = description,
-                            link_yt = linkYt.takeIf { it.isNotBlank() }
-                        )
-
-                        // TODO: Ambil token asli kamu dari SharedPreferences / DataStore
-                        val dummyToken = "35|kDaczeVuwRtCvNngRTkjYtpNlP1VtrP0BSZ7QvD3024878f5"
-
-                        // 2. Tembak API
-                        val response = RetrofitClient.instance.createWorkout(dummyToken, request)
-
-                        // 3. Langsung panggil variabel 'status' dari DefaultResponse kamu
-                        if (response.status) {
-                            Toast.makeText(context, "Workout berhasil ditambahkan!", Toast.LENGTH_SHORT).show()
-                            onNavigateBack()
-                        } else {
-                            // Kalau dari Laravel statusnya false (misal validasi gagal)
-                            Toast.makeText(context, "Gagal: ${response.message}", Toast.LENGTH_LONG).show()
-                        }
-
-                    } catch (e: Exception) {
-                        // Ini kalau error jaringan / server mati
-                        Toast.makeText(context, "Error Jaringan: ${e.message}", Toast.LENGTH_LONG).show()
-                    } finally {
-                        isLoading = false
-                    }
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(60.dp)
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-            enabled = !isLoading
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-            } else {
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Simpan Data Workout",
-                    fontSize = 16.sp,
+                    text = "Tambah Gerakan",
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = Color.Black
                 )
             }
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Masukkan detail workout baru ke database",
+                fontSize = 14.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(start = 56.dp)
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // --- FORM CONTAINER CARD ---
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(16.dp))
+                    .padding(20.dp)
+            ) {
+                // Custom warna Outline + Isian Box biar Premium
+                // Custom warna Outline + Isian Box biar Premium
+                val textFieldColors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = primaryColor,
+                    unfocusedBorderColor = Color(0xFFE0E0E0),
+                    focusedLabelColor = primaryColor,
+                    unfocusedLabelColor = Color.Gray,
+                    cursorColor = primaryColor,
+                    // 🔥 PERBAIKAN: Di Material 3, containerColor harus dipecah jadi dua ini:
+                    focusedContainerColor = Color(0xFFFAFAFA),
+                    unfocusedContainerColor = Color(0xFFFAFAFA)
+                )
+
+                // 1. Nama Workout
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Nama Gerakan (Contoh: Push Up)") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
+                )
+
+                // Row untuk Kategori dan Durasi
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 2. Category ID
+                    OutlinedTextField(
+                        value = categoryId,
+                        onValueChange = { categoryId = it },
+                        label = { Text("ID Kategori") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+
+                    // 3. Durasi
+                    OutlinedTextField(
+                        value = duration,
+                        onValueChange = { duration = it },
+                        label = { Text("Durasi (Menit)") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(bottom = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = textFieldColors,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+
+                // 4. Kalori Terbakar
+                OutlinedTextField(
+                    value = calories,
+                    onValueChange = { calories = it },
+                    label = { Text("Kalori Terbakar (Kcal)") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+
+                // 5. Link Youtube
+                OutlinedTextField(
+                    value = linkYt,
+                    onValueChange = { linkYt = it },
+                    label = { Text("Link YouTube") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
+                )
+
+                // 6. Deskripsi (Multiline)
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("Deskripsi / Cara Melakukan") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(130.dp)
+                        .padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = textFieldColors,
+                    maxLines = 5
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // --- TOMBOL SIMPAN ---
+            Button(
+                onClick = {
+                    // 🔒 LOGIC TOMBOL & API (Sama persis bawaan temen lu)
+                    if (name.isBlank() || categoryId.isBlank() || duration.isBlank() || calories.isBlank() || description.isBlank()) {
+                        Toast.makeText(context, "Semua kolom wajib diisi!", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+
+                    isLoading = true
+
+                    coroutineScope.launch {
+                        try {
+                            val request = WorkoutRequest(
+                                category_id = categoryId.toIntOrNull() ?: 1,
+                                name = name,
+                                duration_minutes = duration.toIntOrNull() ?: 0,
+                                calories_burned = calories.toIntOrNull() ?: 0,
+                                description = description,
+                                link_yt = linkYt.takeIf { it.isNotBlank() }
+                            )
+
+                            val dummyToken = "35|kDaczeVuwRtCvNngRTkjYtpNlP1VtrP0BSZ7QvD3024878f5"
+                            val response = RetrofitClient.instance.createWorkout(dummyToken, request)
+
+                            if (response.status) {
+                                Toast.makeText(context, "Workout berhasil ditambahkan!", Toast.LENGTH_SHORT).show()
+                                onNavigateBack()
+                            } else {
+                                Toast.makeText(context, "Gagal: ${response.message}", Toast.LENGTH_LONG).show()
+                            }
+
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Error Jaringan: ${e.message}", Toast.LENGTH_LONG).show()
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(14.dp), // Sedikit lebih melengkung modern
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = primaryColor,
+                    disabledContainerColor = primaryColor.copy(alpha = 0.6f)
+                ),
+                enabled = !isLoading
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                } else {
+                    Text(
+                        text = "Simpan Data Workout",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -270,5 +294,4 @@ fun AddWorkoutScreen(
 @Composable
 fun AddWorkoutPreview() {
     AddWorkoutScreen(onNavigateBack = {})
-
 }

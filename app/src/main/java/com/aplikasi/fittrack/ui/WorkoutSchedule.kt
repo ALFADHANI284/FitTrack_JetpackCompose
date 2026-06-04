@@ -28,16 +28,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun WorkoutScheduleScreen() {
+fun WorkoutScheduleScreen(
+    onBackClick: () -> Unit // 🆕 Tambah parameter ini agar tombol Back berfungsi bawaan rute
+) {
     val yellowTheme = Color(0xFFFFB300)
 
-    // STATE: Untuk menyimpan minggu mana yang sedang dipilih
+    // 🔒 LOGIC 100% UTAL-ATIL AMAN
     var selectedWeek by remember { mutableStateOf("Week 1") }
     val weeks = listOf("Week 1", "Week 2", "Week 3", "Week 4", "Week 5")
 
     Scaffold(
         topBar = {
-            // HEADER DENGAN JUDUL DI TENGAH
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -50,7 +51,7 @@ fun WorkoutScheduleScreen() {
                     contentDescription = "Back",
                     modifier = Modifier
                         .size(28.dp)
-                        .clickable { /* TODO: Navigasi Back */ }
+                        .clickable { onBackClick() } // 🔒 Diarahkan langsung ke fungsi rute kembali
                 )
 
                 Text(
@@ -62,12 +63,10 @@ fun WorkoutScheduleScreen() {
                     textAlign = TextAlign.Center
                 )
 
-                // Spacer ini untuk menyeimbangkan posisi tombol Back agar teks benar-benar di tengah
                 Spacer(modifier = Modifier.size(28.dp))
             }
         },
         bottomBar = {
-            // TOMBOL RESERVE DI BAWAH
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -100,7 +99,6 @@ fun WorkoutScheduleScreen() {
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
         ) {
-            // TABS MINGGU (Bisa di-scroll ke samping)
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 24.dp),
@@ -129,23 +127,40 @@ fun WorkoutScheduleScreen() {
 
             // LIST JADWAL: HARI PERTAMA
             DateHeader("Today, 03 March")
-            ScheduleCard(title = "Dash Strength", time = "7:30 am • 45 min", calories = "250 kcal")
-            ScheduleCard(title = "High 45", time = "8:30 am • 45 min", calories = "200 kcal")
+            ScheduleCard(
+                title = "Dash Strength",
+                time = "7:30 am • 45 min",
+                calories = "250 kcal",
+                imageRes = com.aplikasi.fittrack.R.drawable.dash
+            )
+            ScheduleCard(
+                title = "High 45",
+                time = "8:30 am • 45 min",
+                calories = "200 kcal",
+                imageRes = com.aplikasi.fittrack.R.drawable.high
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // LIST JADWAL: HARI KEDUA
             DateHeader("Monday, 06 March")
-            ScheduleCard(title = "High 45", time = "5:30 pm • 45 min", calories = "250 kcal")
-            ScheduleCard(title = "Mobility", time = "6:00 pm • 45 min", calories = "250 kcal")
+            ScheduleCard(
+                title = "High 45",
+                time = "5:30 pm • 45 min",
+                calories = "250 kcal",
+                imageRes = com.aplikasi.fittrack.R.drawable.high
+            )
+            ScheduleCard(
+                title = "Mobility",
+                time = "6:00 pm • 45 min",
+                calories = "250 kcal",
+                imageRes = com.aplikasi.fittrack.R.drawable.mobility
+            )
 
-            // Tambahan ruang kosong di bawah agar tidak terlalu mepet dengan tombol Reserve
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
-
-// --- KOMPONEN BANTUAN ---
 
 @Composable
 fun DateHeader(dateText: String) {
@@ -159,13 +174,18 @@ fun DateHeader(dateText: String) {
 }
 
 @Composable
-fun ScheduleCard(title: String, time: String, calories: String) {
+fun ScheduleCard(
+    title: String,
+    time: String,
+    calories: String,
+    imageRes: Int = android.R.drawable.ic_menu_gallery
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 24.dp, vertical = 8.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)), // Warna Light Gray
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5)),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -174,9 +194,8 @@ fun ScheduleCard(title: String, time: String, calories: String) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Gambar Workout
             Image(
-                painter = painterResource(id = android.R.drawable.ic_menu_gallery), // Placeholder
+                painter = painterResource(id = imageRes),
                 contentDescription = "Workout Image",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -187,7 +206,6 @@ fun ScheduleCard(title: String, time: String, calories: String) {
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Detail Teks
             Column {
                 Text(
                     text = title,
@@ -199,7 +217,6 @@ fun ScheduleCard(title: String, time: String, calories: String) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Ikon Waktu
                     Icon(
                         imageVector = Icons.Default.Schedule,
                         contentDescription = "Time",
@@ -211,7 +228,6 @@ fun ScheduleCard(title: String, time: String, calories: String) {
 
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    // Ikon Kalori
                     Icon(
                         imageVector = Icons.Default.LocalFireDepartment,
                         contentDescription = "Calories",
@@ -229,5 +245,5 @@ fun ScheduleCard(title: String, time: String, calories: String) {
 @Preview(showBackground = true)
 @Composable
 fun WorkoutSchedulePreview() {
-    WorkoutScheduleScreen()
+    WorkoutScheduleScreen(onBackClick = {})
 }

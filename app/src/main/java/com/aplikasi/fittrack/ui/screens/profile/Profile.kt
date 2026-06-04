@@ -2,32 +2,22 @@ package com.aplikasi.fittrack.ui.screens.profile
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.* import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +31,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.model.UserData
@@ -52,13 +43,14 @@ import com.aplikasi.fittrack.viewmodel.ProfileViewModel
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onLogoutClick: () -> Unit,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToSchedule: () -> Unit // 🆕 Tambah parameter rute navigasi untuk temen lu
 ) {
+    // 🔒 LOGIC UTAS-ATIL AMAN: Data & state asli bawaan temen lu tetap utuh
     val user by viewModel.profileData
     val isLoading by viewModel.isLoading
     val isGuest by viewModel.isGuest
 
-    // 👇 TRIK AMAN H-1: Init AchievementViewModel di dalam sini biar GAK MERAH di MainScreen
     val context = LocalContext.current
     val apiService = RetrofitClient.instance
     val achievementViewModel = remember {
@@ -83,8 +75,9 @@ fun ProfileScreen(
         ProfileContent(
             user = user,
             isLoading = isLoading,
-            achievementViewModel = achievementViewModel, //  Lempar ke konten
-            onLogoutClick = onLogoutClick
+            achievementViewModel = achievementViewModel,
+            onLogoutClick = onLogoutClick,
+            onNavigateToSchedule = onNavigateToSchedule // 🆕 Oper ke konten utama
         )
     }
 }
@@ -93,105 +86,189 @@ fun ProfileScreen(
 fun ProfileContent(
     user: UserData?,
     isLoading: Boolean,
-    achievementViewModel: AchievementViewModel, // Tambah parameter di sini
-    onLogoutClick: () -> Unit
+    achievementViewModel: AchievementViewModel,
+    onLogoutClick: () -> Unit,
+    onNavigateToSchedule: () -> Unit // 🆕 Terima parameter di sini
 ) {
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color(0xFFFFB200))
         }
     } else {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
-                // PENTING: Kasih scroll biar bisa di-skrol ke bawah pas badge-nya banyak
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // --- Header Profil ---
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = "Profile Picture",
-                tint = Color.Gray,
+            // 🟡 HEADER KUNING MELENGKUNG
+            Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFEEEEEE))
-                    .padding(16.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(text = user?.name ?: "No Name", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text(text = user?.email ?: "No Email", fontSize = 14.sp, color = Color.Gray)
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // --- Stats Metrik Fisik ---
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1)),
-                border = BorderStroke(1.dp, Color(0xFFFFB200))
+                    .fillMaxWidth()
+                    .height(180.dp)
+                    .background(
+                        color = Color(0xFFFFB300),
+                        shape = RoundedCornerShape(bottomStart = 120.dp)
+                    )
+                    .padding(top = 24.dp, start = 16.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.Black,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { /* Handle Back jika ada */ }
+                )
+            }
+
+            // 📜 KONTEN UTAMA (SCROLLABLE)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(110.dp))
+
+                // ⚪ FOTO PROFIL BULAT OVERLAP
+                Box(
+                    modifier = Modifier
+                        .size(130.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE0E0E0), shape = CircleShape)
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
                 ) {
-                    StatItem(label = "Berat", value = "${user?.weight ?: 0} kg")
-                    StatItem(label = "Tinggi", value = "${user?.height ?: 0} cm")
-
-                    val formattedGoal = user?.goal?.replace("_", " ")?.replaceFirstChar { it.uppercase() } ?: "-"
-                    StatItem(label = "Goal", value = formattedGoal)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Profile Picture",
+                        tint = Color.DarkGray,
+                        modifier = Modifier
+                            .size(115.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFEFEFEF))
+                            .padding(16.dp)
+                    )
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            // --- Stats Kalori & Akun ---
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                // 🏷️ NAMA & TIER
+                Text(
+                    text = user?.name ?: "No Name",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black
+                )
+                Text(
+                    text = user?.tier ?: "Bronze",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFFFB300)
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // 📊 INFORMASI USER
+                StatItem(label = "E-mail", value = user?.email ?: "No Email", modifier = Modifier.fillMaxWidth())
+
+                val formattedGoal = user?.goal?.replace("_", " ")?.replaceFirstChar { it.uppercase() } ?: "-"
+                StatItem(label = "Fitness Goal", value = formattedGoal, modifier = Modifier.fillMaxWidth())
+
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
+                    StatItem(label = "Berat Badan", value = "${user?.weight ?: 0} kg", modifier = Modifier.weight(1f))
+                    StatItem(label = "Tinggi Badan", value = "${user?.height ?: 0} cm", modifier = Modifier.weight(1f))
+                }
+
+                Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp)) {
+                    StatItem(label = "Target Kalori", value = "${user?.dailyCaloriesTarget ?: 0} kcal", modifier = Modifier.weight(1f))
+                    StatItem(label = "Referral Code", value = user?.referralCode ?: "-", modifier = Modifier.weight(1f))
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 🏆 SECTION ACHIEVEMENT
+                Box(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    AchievementSection(viewModel = achievementViewModel)
+                }
+
+                Spacer(modifier = Modifier.height(44.dp))
+
+                // 🆕 7. TOMBOL WORKOUT SCHEDULE (Outlined Pill Style)
+                OutlinedButton(
+                    onClick = onNavigateToSchedule, // 🔒 Panggil aksi navigasi pesanan temen lu
+                    border = BorderStroke(2.dp, Color(0xFFFFB300)),
+                    shape = RoundedCornerShape(50.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFFB300)),
+                    modifier = Modifier
+                        .fillMaxWidth(0.75f)
+                        .height(55.dp)
                 ) {
-                    StatItem(label = "Target Kalori", value = "${user?.dailyCaloriesTarget ?: 0} kcal")
-                    StatItem(label = "Points", value = "${user?.points ?: 0}")
-                    StatItem(label = "Tier", value = user?.tier ?: "Bronze")
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarMonth,
+                            contentDescription = "Schedule Icon",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Workout Schedule",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(12.dp)) // Jarak antar tombol biar gak dempet
+
+                // 🛑 8. TOMBOL LOGOUT (Solid Yellow Pill)
+                Button(
+                    onClick = onLogoutClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFB300),
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(50.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.75f)
+                        .height(55.dp)
+                ) {
+                    Text(
+                        text = "Logout",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(40.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ======================================================
-            // NGEGABUNGIN SECTION ACHIEVEMENT LU KE SINI 🔥
-            // ======================================================
-            AchievementSection(viewModel = achievementViewModel)
-
-            // Ganti Spacer weight(1f) jadi ukuran tetap biar gak ngerusak layout scrollable
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // --- Tombol Logout ---
-            Button(
-                onClick = onLogoutClick,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
-                shape = RoundedCornerShape(28.dp),
-                modifier = Modifier.fillMaxWidth().height(50.dp)
-            ) {
-                Text(text = "Logout", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun StatItem(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(text = value, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
-        Text(text = label, fontSize = 14.sp, color = Color.Gray)
+fun StatItem(label: String, value: String, modifier: Modifier = Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.padding(vertical = 10.dp)
+    ) {
+        Text(
+            text = label,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFFFFB200)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            fontSize = 19.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 4.dp)
+        )
     }
 }
 
@@ -201,57 +278,77 @@ fun AchievementSection(viewModel: AchievementViewModel) {
     val points by viewModel.totalPoints
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Tampilan Total Poin Berkelir Kuning Hitam ala Neo-Brutalist
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFFFB200), shape = RoundedCornerShape(8.dp))
-                .padding(16.dp)
+                .background(Color(0xFFFFF9E6), shape = RoundedCornerShape(12.dp))
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "🏆 Total Poin Kamu: $points PTS",
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 18.sp,
-                color = Color.Black
+                fontWeight = FontWeight.Bold,
+                fontSize = 16.sp,
+                color = Color(0xFFFFB200)
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = "Badges & Achievements", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = "Badges & Achievements",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Color.Black
+        )
+        Spacer(modifier = Modifier.height(12.dp))
 
-        // List Badge Horizontal
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(badgeList) { badge ->
                 val statusAlpha = if (badge.isUnlocked) 1f else 0.4f
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.width(80.dp).alpha(statusAlpha)
+                    modifier = Modifier
+                        .width(85.dp)
+                        .alpha(statusAlpha)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(60.dp)
-                            .background(Color(0xFF4A4A4A), shape = CircleShape),
+                            .size(65.dp)
+                            .background(Color(0xFFFFF9E6), shape = CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = "🏅", fontSize = 28.sp)
+                        Text(text = "🏅", fontSize = 30.sp)
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = badge.name, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, textAlign = TextAlign.Center)
-                    Text(text = "+${badge.points} Pts", fontSize = 10.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = badge.name,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "+${badge.points} Pts",
+                        fontSize = 11.sp,
+                        color = Color.Gray
+                    )
 
                     if (badge.isUnlocked && !badge.isClaimed) {
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Button(
                             onClick = { viewModel.claimBadge(badge.id) },
-                            contentPadding = PaddingValues(2.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB200), contentColor = Color.Black),
-                            modifier = Modifier.height(24.dp)
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFFFB200),
+                                contentColor = Color.Black
+                            ),
+                            modifier = Modifier.height(26.dp)
                         ) {
                             Text("Claim", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
@@ -262,18 +359,8 @@ fun AchievementSection(viewModel: AchievementViewModel) {
     }
 }
 
-
-// --- Komponen Bantuan ---
-// (StatItem, NeoBrutalistStreakBox, AchievementBadge tetap sama seperti kodemu, tidak perlu diubah)
-// 3. Preview sekarang mengarah ke ProfileContent yang murni UI!
-//@Preview(showBackground = true)
-//@Composable
-//fun ProfileScreenPreviewLoading() {
-//    ProfileContent(
-//        user = null,
-//        isLoading = true, // Ubah jadi false kalau mau ngetes tampilan tanpa loading
-//        onLogoutClick = {},
-//        achievementViewModel = remember { AchievementViewModel(RetrofitClient.instance, LocalContext.current) }
-//    )
-//}
-
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreviewSuccess() {
+    // Kosong untuk keperluan preview manual project
+}

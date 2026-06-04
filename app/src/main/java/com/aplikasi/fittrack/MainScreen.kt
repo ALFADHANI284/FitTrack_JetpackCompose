@@ -1,6 +1,5 @@
 package com.aplikasi.fittrack
 
-import UserCategoryScreen
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
@@ -58,6 +57,9 @@ import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.model.ReviewUIModel
 import com.aplikasi.fittrack.network.RetrofitClient
 import com.aplikasi.fittrack.ui.FitAiChatSheet
+import com.aplikasi.fittrack.ui.WorkoutScheduleScreen
+// 🎯 FIXED IMPORT: Sekarang alamat foldernya sudah benar, Android Studio dijamin tidak buta lagi
+import com.aplikasi.fittrack.ui.UserCategoryScreen
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
 import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
@@ -165,8 +167,8 @@ class MainScreen : ComponentActivity() {
                         //  UPDATE: Cuma nambahin parameter homeViewModel ke HomeScreen
                         "home" -> {
                             HomeScreen(
-                                profileViewModel = profileViewModel, // Ganti nama dikit menyesuaikan HomeScreen baru
-                                homeViewModel = homeViewModel,       // Masukin viewmodel streak & analytics
+                                profileViewModel = profileViewModel,
+                                homeViewModel = homeViewModel,
                                 onBodyFocusClick = { id, name ->
                                     selectedCategoryId = id
                                     selectedCategoryName = name
@@ -222,6 +224,16 @@ class MainScreen : ComponentActivity() {
                                 },
                                 onNavigateToLogin = {
                                     currentScreen = "login"
+                                },
+                                onNavigateToSchedule = {
+                                    currentScreen = "WorkoutSchedule"
+                                }
+                            )
+                        }
+                        "WorkoutSchedule" -> {
+                            WorkoutScheduleScreen(
+                                onBackClick = {
+                                    currentScreen = "profile"
                                 }
                             )
                         }
@@ -280,7 +292,7 @@ class MainScreen : ComponentActivity() {
 @Composable
 fun HomeScreen(
     profileViewModel: ProfileViewModel,
-    homeViewModel: HomeViewModel, // Tambahan parameter
+    homeViewModel: HomeViewModel,
     onBodyFocusClick: (Int, String) -> Unit,
 ) {
     var showAiChat by remember { mutableStateOf(false) }
@@ -289,15 +301,12 @@ fun HomeScreen(
     val sharedPreferences = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
     val savedToken = sharedPreferences.getString("ACCESS_TOKEN", "") ?: ""
 
-    // State dari Profile
     val user by profileViewModel.profileData
     val namaUser = user?.name ?: "User"
 
-    // Tarik State dari HomeViewModel
     val streakDays by homeViewModel.streakDays
     val isWorkoutToday by homeViewModel.isWorkoutToday
     val analyticsData by homeViewModel.analyticsData
-
 
     val weeklyHistory by homeViewModel.weeklyWorkoutCounts
     val days = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
@@ -309,11 +318,9 @@ fun HomeScreen(
 
     val reviewsList by homeViewModel.userReviews
 
-
-    // Panggil API pas layar dibuka
     LaunchedEffect(Unit) {
         profileViewModel.fetchProfile()
-        homeViewModel.loadAllHomeData() // Muat streak & analytics
+        homeViewModel.loadAllHomeData()
     }
 
     Scaffold(
@@ -336,7 +343,6 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            // HEADER DENGAN STREAK
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -347,7 +353,6 @@ fun HomeScreen(
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold
                 )
-                // UI Streak Dinamis
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     val fireColor = if (isWorkoutToday) Color(0xFFFF4500) else Color(0xFFD3D3D3)
                     Icon(Icons.Default.LocalFireDepartment, contentDescription = "Streak", tint = fireColor, modifier = Modifier.size(24.dp))
@@ -363,7 +368,6 @@ fun HomeScreen(
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // CALORIES CARD
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -374,8 +378,6 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
-
-                    // --- Header Grafik ---
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -398,7 +400,6 @@ fun HomeScreen(
                         Text(text = "Week ▾", fontSize = 14.sp, color = Color.Gray)
                     }
 
-                    // --- Grafik Batang ---
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -407,16 +408,14 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceEvenly,
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        // Sekarang days dan weeklyHistory udah kebaca di sini!
                         days.forEachIndexed { index, day ->
                             val workoutCount = weeklyHistory.getOrNull(index) ?: 0
                             val barValue = (workoutCount * 12).coerceAtMost(70)
                             val barColor = if (workoutCount > 0) Color(0xFFFFB200) else Color(0xFFE6E6E6)
 
-                            // Pilih salah satu (tergantung BarItem lu nerima Int atau Dp)
                             BarItem(
                                 day = day,
-                                height = if (barValue == 0) 5 else barValue, // Ganti jadi 5.dp dan barValue.dp kalau merah
+                                height = if (barValue == 0) 5 else barValue,
                                 color = barColor
                             )
                         }
@@ -424,7 +423,6 @@ fun HomeScreen(
                 }
             }
 
-            // FEATURED PLAN (Body Focus)
             SectionTitle(title = "Body Focus", modifier = Modifier.padding(top = 20.dp))
             Row(
                 modifier = Modifier
@@ -452,7 +450,6 @@ fun HomeScreen(
                 ) { Text("Full Body", fontWeight = FontWeight.Bold) }
             }
 
-            // Favorites
             SectionTitle(title = "My Favorites", modifier = Modifier.padding(top = 20.dp))
             Row(
                 modifier = Modifier
@@ -462,15 +459,13 @@ fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 favoritesList.forEach { favorite ->
-                    // Panggil FavoriteCard lu dengan isi dari loop API
                     FavoriteCard(
-                        title = favorite.first,       // Mengambil judul workout
-                        duration = favorite.second    // Mengambil durasi workout
+                        title = favorite.first,
+                        duration = favorite.second
                     )
                 }
             }
 
-            // PROGRESS
             SectionTitle(title = "Your Progress", modifier = Modifier.padding(top = 22.dp))
             Card(
                 modifier = Modifier.fillMaxWidth().height(130.dp).padding(top = 12.dp),
@@ -478,8 +473,6 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = Color(0xFFFFB200))
             ) {
                 Column(modifier = Modifier.padding(18.dp).fillMaxSize()) {
-
-                    // Panggil state angkanya di sini
                     Text(
                         text = currentWeight,
                         color = Color(0xFF0F0B0B),
@@ -487,7 +480,6 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    // Panggil state naik/turunnya di sini
                     Text(
                         text = weightDiff,
                         fontSize = 14.sp,
@@ -506,19 +498,14 @@ fun HomeScreen(
                 }
             }
         }
-        // Tampilkan bagian ini HANYA kalau datanya ada (nggak kosong)
         if (reviewsList.isNotEmpty()) {
-            // Header Section
             SectionTitle(title = "Recent App Reviews", modifier = Modifier.padding(top = 24.dp))
-
-            // List Review
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Ambil maksimal 3 data terbaru pakai .take(3)
                 reviewsList.take(3).forEach { review ->
                     ReviewItemCard(review = review)
                 }
@@ -533,13 +520,14 @@ fun HomeScreen(
         }
     }
 }
+
 @Composable
 fun ReviewItemCard(review: ReviewUIModel) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)), // Abu-abu super muda
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE)) // Garis tepi tipis biar tegas
+        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -547,14 +535,11 @@ fun ReviewItemCard(review: ReviewUIModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Deretan Bintang Rating
                 Row {
                     repeat(review.rating) {
                         Text(text = "⭐", fontSize = 14.sp)
                     }
                 }
-
-                // Label kecil penanda ini review dari dia sendiri
                 Box(
                     modifier = Modifier
                         .background(Color(0xFFE3F2FD), shape = RoundedCornerShape(4.dp))
@@ -563,10 +548,7 @@ fun ReviewItemCard(review: ReviewUIModel) {
                     Text(text = "My Review", fontSize = 10.sp, color = Color(0xFF1976D2), fontWeight = FontWeight.Bold)
                 }
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
-            // Teks Ulasan
             Text(
                 text = "\"${review.reviewText}\"",
                 fontSize = 14.sp,
@@ -577,7 +559,7 @@ fun ReviewItemCard(review: ReviewUIModel) {
         }
     }
 }
-// --- KOMPONEN NAVIGASI & BANTUAN UTAMA ---
+
 @Composable
 fun CustomBottomNavigation(
     currentScreen: String,
@@ -662,7 +644,7 @@ fun FavoriteCard(title: String, duration: String) {
         modifier = Modifier
             .width(160.dp)
             .height(110.dp)
-            .clickable { /* TODO: Arahin ke Workout Detail */ },
+            .clickable { },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
     ) {

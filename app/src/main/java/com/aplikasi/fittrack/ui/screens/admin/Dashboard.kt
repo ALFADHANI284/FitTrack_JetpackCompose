@@ -2,18 +2,24 @@ package com.aplikasi.fittrack.ui.screens.admin
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -27,74 +33,146 @@ fun AdminDashboardScreen(
     onNavigateToWorkoutList: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // Warna primary_color (kamu bisa sesuaikan dengan hex warna aslimu)
+    // 🟡 Warna Tema Utama Admin
     val primaryColor = Color(0xFFF5A300)
 
-    // Column = LinearLayout (vertical)
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White) // Pengganti @color/background_color
-            .padding(24.dp)
+            .background(Color(0xFFF8F9FA)) // Diubah ke abu-abu lembut agar layout memiliki dimensi kedalaman
     ) {
-
-        // Judul
-        Text(
-            text = "Admin Dashboard",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black, // Pengganti @color/text_color_primary
-            modifier = Modifier.padding(top = 32.dp, bottom = 8.dp)
-        )
-
-        // Subjudul
-        Text(
-            text = "Kelola data FitTrack dari sini",
-            fontSize = 16.sp,
-            color = Color.Gray, // Pengganti @color/text_color_secondary
-            modifier = Modifier.padding(bottom = 40.dp)
-        )
-
-        // 1. TOMBOL TAMBAH GERAKAN
-        Button(
-            onClick = { onNavigateToAddWorkout() }, // <--- PANGGIL DI SINI
-            modifier = Modifier.fillMaxWidth().height(60.dp).padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = primaryColor)
-        ) {
-            Text("Tambah Gerakan Latihan", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-        }
-
-        // Tombol Daftar Gerakan (Outlined Button)
-        OutlinedButton(
-            onClick = { onNavigateToWorkoutList() },
+        // 🟡 1. AKSEN HEADER MELENGKUNG (Konsisten dengan gaya Profile)
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(60.dp)
-                .padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(2.dp, primaryColor),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = primaryColor)
+                .height(160.dp)
+                .background(
+                    color = primaryColor,
+                    shape = RoundedCornerShape(bottomEnd = 60.dp)
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
         ) {
+            // --- HEADER TEXT SECTION ---
+            Spacer(modifier = Modifier.height(36.dp))
             Text(
-                text = "Daftar Gerakan (Database)",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                text = "Admin Dashboard",
+                fontSize = 28.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
-        }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "Kelola data FitTrack dari sini",
+                fontSize = 15.sp,
+                color = Color.White.copy(alpha = 0.85f)
+            )
 
-        // Ini pengganti <Space layout_weight="1"/>
-        // Fungsinya untuk mendorong elemen di bawahnya sampai ke dasar layar
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.height(54.dp))
 
-        // 2. TOMBOL LOGOUT
-        Button(
-            onClick = { onLogout() }, // <--- PANGGIL DI SINI
-            modifier = Modifier.fillMaxWidth().height(55.dp).padding(bottom = 16.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFEBEE))
-        ) {
-            Text("Keluar dari Mode Admin", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+            // 🟢 2. KARTU STATUS KOSMETIK (Mengisi ruang kosong agar terlihat profesional)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White, shape = RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(Color(0xFF4CAF50), shape = CircleShape) // Indikator Hijau Aktif
+                    )
+                    Text(
+                        text = "Mode Admin: Sistem Basis Data Aktif",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "Menu Manajemen Data",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(bottom = 12.dp, start = 4.dp)
+            )
+
+            // --- PILIHAN MENU UTAMA ---
+
+            // 1. TOMBOL TAMBAH GERAKAN
+            Button(
+                onClick = { onNavigateToAddWorkout() }, // 🔒 LOGIC TETAP SAMA
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            ) {
+                Text(
+                    text = "➕  Tambah Gerakan Latihan",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            // 2. TOMBOL DAFTAR GERAKAN
+            OutlinedButton(
+                onClick = { onNavigateToWorkoutList() }, // 🔒 LOGIC TETAP SAMA
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(2.dp, primaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = primaryColor,
+                    containerColor = Color.White // Latar belakang putih bersih di atas base abu-abu
+                )
+            ) {
+                Text(
+                    text = "📋  Daftar Gerakan (Database)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // Mendorong tombol logout tetap berada tepat di bagian paling bawah layar
+            Spacer(modifier = Modifier.weight(1f))
+
+            // 3. TOMBOL LOGOUT (Dibuat melonjong menyerupai desain tombol logout user)
+            Button(
+                onClick = { onLogout() }, // 🔒 LOGIC TETAP SAMA
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp)
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(50.dp), // Pill-shaped lonjong sempurna
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFFFEBEE), // Background soft-red
+                    contentColor = Color(0xFFD32F2F)     // Teks merah tegas
+                )
+            ) {
+                Text(
+                    text = "Keluar dari Mode Admin",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

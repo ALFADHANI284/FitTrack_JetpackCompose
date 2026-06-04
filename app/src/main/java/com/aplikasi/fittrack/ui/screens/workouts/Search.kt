@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aplikasi.fittrack.model.WorkoutResponse
@@ -266,13 +267,17 @@ fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
     }
 }
 
-//@Preview(showBackground = true, device = "id:pixel_5")
-//@Composable
-//fun SearchScreenPreview() {
-//    // Kamu bisa membungkusnya dengan Tema aplikasimu jika ada,
-//    // misal: FitTrackTheme { ... }
-//    SearchScreen(
-//        onNavigateToProfile = {  },
-//        onNavigateToCategories = {  }
-//    )
-//}
+@Preview(showBackground = true, device = "id:pixel_5")
+@Composable
+fun SearchScreenPreview() {
+    // Kamu bisa membungkusnya dengan Tema aplikasimu jika ada,
+    // misal: FitTrackTheme { ... }
+    SearchScreen(
+        // 1. Tambahkan parameter viewModel yang diminta
+        viewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+        onNavigateToProfile = {  },
+        onNavigateToCategories = {  },
+        // 2. Tambahkan parameter onNavigateToDetail yang diminta
+        onNavigateToDetail = {  }
+    )
+}
