@@ -6,7 +6,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 
 object RetrofitClient {
-    private const val BASE_URL = "http://192.168.137.33:8000/api/"
+    private const val BASE_URL = "https://fittracklaravel-production.up.railway.app/api/" // Cloud
+//    private const val BASE_URL = "http://192.168.1.13:8000/api/" // local
 
     val client = OkHttpClient.Builder()
         .addInterceptor { chain ->
