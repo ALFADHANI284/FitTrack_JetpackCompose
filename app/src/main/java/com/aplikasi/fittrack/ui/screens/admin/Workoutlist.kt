@@ -156,5 +156,5 @@ fun WorkoutListScreen(
 @Preview(showBackground = true)
 @Composable
 fun AdminWorkoutListPreview() {
-    AdminWorkoutListPreview()
+    WorkoutListScreen(onNavigateBack = {}, onNavigateToEdit = {})
 }

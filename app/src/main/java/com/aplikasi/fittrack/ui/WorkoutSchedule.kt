@@ -137,7 +137,7 @@ fun WorkoutScheduleScreen(
                 title = "High 45",
                 time = "8:30 am • 45 min",
                 calories = "200 kcal",
-                imageRes = com.aplikasi.fittrack.R.drawable.high
+                imageRes = com.aplikasi.fittrack.R.drawable.run
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -148,7 +148,7 @@ fun WorkoutScheduleScreen(
                 title = "High 45",
                 time = "5:30 pm • 45 min",
                 calories = "250 kcal",
-                imageRes = com.aplikasi.fittrack.R.drawable.high
+                imageRes = com.aplikasi.fittrack.R.drawable.pull
             )
             ScheduleCard(
                 title = "Mobility",

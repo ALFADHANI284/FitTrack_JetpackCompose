@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image // 🎯 TAMBAHAN IMPORT UNTUK IMAGE
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -49,7 +50,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Color.Companion.White
+import androidx.compose.ui.layout.ContentScale // 🎯 TAMBAHAN IMPORT UNTUK CLIP IMAGE BULAT
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -62,6 +66,7 @@ import com.aplikasi.fittrack.ui.WorkoutScheduleScreen
 import com.aplikasi.fittrack.ui.UserCategoryScreen
 import com.aplikasi.fittrack.ui.screens.admin.AddWorkoutScreen
 import com.aplikasi.fittrack.ui.screens.admin.AdminDashboardScreen
+import com.aplikasi.fittrack.ui.screens.admin.AdminScheduleScreen
 import com.aplikasi.fittrack.ui.screens.admin.WorkoutListScreen
 import com.aplikasi.fittrack.ui.screens.auth.LoginScreen
 import com.aplikasi.fittrack.ui.screens.auth.RegisterScreen
@@ -262,18 +267,47 @@ class MainScreen : ComponentActivity() {
                             )
                         }
                         "admin" -> {
+                            // 💡 Memanggil fungsi dari Dashboard.kt
                             AdminDashboardScreen(
                                 onNavigateToAddWorkout = { currentScreen = "add_workout" },
                                 onNavigateToWorkoutList = { currentScreen = "workout_list" },
+                                onNavigateToSchedule = { currentScreen = "Schedule" },       // Menuju rute "Schedule"
+                                onNavigateToCategories = { currentScreen = "Workoutlist" }, // Menuju rute "Workoutlist"
                                 onLogout = { currentScreen = "login" }
                             )
                         }
+
                         "add_workout" -> {
+                            // 💡 Memanggil fungsi dari AddWorkout.kt
                             AddWorkoutScreen(
                                 onNavigateBack = { currentScreen = "admin" }
                             )
                         }
+
                         "workout_list" -> {
+                            // 💡 Memanggil fungsi dari Dashboard.kt atau list bawaan lama lu
+                            WorkoutListScreen(
+                                onNavigateBack = { currentScreen = "admin" },
+                                onNavigateToEdit = { id ->
+                                    Toast.makeText(this@MainScreen, "Mau edit ID: $id", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+
+                        // ==========================================
+// 🎯 JALUR TAMBAHAN DISESUAIKAN DENGAN STRUKTUR FILE LU
+// ==========================================
+
+                        "Schedule" -> {
+                            // 🎯 FIXED: Di dalam file Schedule.kt lu, fungsinya cuma minta onBackClick saja!
+                            AdminScheduleScreen(
+                                onBackClick = { currentScreen = "admin" }
+                            )
+                        }
+
+                        "Workoutlist" -> {
+                            // 🎯 FIXED: Mengubah huruf 'l' kecil menjadi 'L' besar (WorkoutListScreen) sesuai isi file lu.
+                            // Ditambah parameter edit bawaan file lu agar tidak eror merah.
                             WorkoutListScreen(
                                 onNavigateBack = { currentScreen = "admin" },
                                 onNavigateToEdit = { id ->
@@ -327,13 +361,17 @@ fun HomeScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAiChat = true },
-                containerColor = Color.Black,
+                containerColor = Color(0xFFFFB200),
                 contentColor = Color.White,
                 shape = CircleShape
             ) {
-                Icon(Icons.Default.SmartToy, contentDescription = "Tanya FitAI")
+                Image(
+                    painter = painterResource(id = com.aplikasi.fittrack.R.drawable.iconai),
+                    contentDescription = "Tanya FitAI",
+                    modifier = Modifier.size(50.dp)
+                )
             }
-        },
+        }, // 🎯 FIXED: Di sini wajib ditutup tanda kurung kurawal + kurung biasa, lalu dikasih koma!
         containerColor = Color.White
     ) { paddingValues ->
         Column(
@@ -431,23 +469,24 @@ fun HomeScreen(
                     .horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Box(
-                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
-                        .clickable { onBodyFocusClick(1, "Upper Body") },
-                    contentAlignment = Alignment.Center
-                ) { Text("Upper Body", fontWeight = FontWeight.Bold) }
+                // 🎯 UPGRADE: Kotak diubah jadi menggunakan image dinamis dengan potongan bulat sempurna
+                BodyFocusCard(
+                    title = "Upper Body",
+                    imageRes = com.aplikasi.fittrack.R.drawable.high, // Sesuaikan dengan file drawable lu
+                    onClick = { onBodyFocusClick(1, "Upper Body") }
+                )
 
-                Box(
-                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
-                        .clickable { onBodyFocusClick(2, "Lower Body") },
-                    contentAlignment = Alignment.Center
-                ) { Text("Lower Body", fontWeight = FontWeight.Bold) }
+                BodyFocusCard(
+                    title = "Lower Body",
+                    imageRes = com.aplikasi.fittrack.R.drawable.dash, // Sesuaikan dengan file drawable lu
+                    onClick = { onBodyFocusClick(2, "Lower Body") }
+                )
 
-                Box(
-                    modifier = Modifier.size(150.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xFFE0E0E0))
-                        .clickable { onBodyFocusClick(3, "Full Body") },
-                    contentAlignment = Alignment.Center
-                ) { Text("Full Body", fontWeight = FontWeight.Bold) }
+                BodyFocusCard(
+                    title = "Full Body",
+                    imageRes = com.aplikasi.fittrack.R.drawable.cihuy, // Menggunakan foto cihuy kesayangan lu
+                    onClick = { onBodyFocusClick(3, "Full Body") }
+                )
             }
 
             SectionTitle(title = "My Favorites", modifier = Modifier.padding(top = 20.dp))
@@ -517,6 +556,47 @@ fun HomeScreen(
                 token = "Bearer $savedToken",
                 onDismiss = { showAiChat = false }
             )
+        }
+    }
+}
+
+// 🎯 KOMPONEN BARU: Card khusus Body Focus dengan foto bulat manis serasi halaman lain
+@Composable
+fun BodyFocusCard(title: String, imageRes: Int, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(150.dp)
+            .clip(RoundedCornerShape(20.dp)) // Menyamakan kelengkungan sudut dengan card lain
+            .background(Color(0xFFFFB200)) // Tema warna kuning tegas FitTrack
+            .clickable { onClick() }
+            .padding(14.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceBetween,
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 16.sp,
+                color = Color(0xFF111111)
+            )
+
+            // Wadah foto bulat rapi di pojok kanan bawah kotak slider
+            Box(
+                modifier = Modifier
+                    .size(65.dp)
+                    .clip(CircleShape)
+                    .align(Alignment.End)
+            ) {
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop, // Potong otomatis biar bulet simetris
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -39,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale // 🎯 WAJIB DIIMPORT UNTUK POTONG FOTO BULAT
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -83,7 +85,7 @@ fun SearchScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp)
-                    .border(1.dp, Color.Black, RoundedCornerShape(25.dp)) // Tambahan border neo-brutalist
+                    .border(1.dp, Color.Black, RoundedCornerShape(25.dp)) // Border neo-brutalist tetep dipertahankan
                     .background(Color.White, shape = RoundedCornerShape(25.dp))
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -130,7 +132,6 @@ fun SearchScreen(
                     Text("Search Results", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Looping daftar hasil pencarian
                     searchResults.forEach { workout ->
                         SearchResultItem(workout = workout, onClick = { onNavigateToDetail(workout.id) })
                     }
@@ -161,20 +162,24 @@ fun SearchScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // 🎯 SEKARANG SET TIAP KOTAK PUNYA WARNA TEGAS & FOTO YANG BEDA-BEDA
                 BrowseCard(
                     title = "Full Body",
                     subtitle = "24 Workouts Progress",
-                    backgroundColor = Color(0xFFA1CFFB) // Biru Muda
+                    backgroundColor = Color(0xFFFFB200), // FitTrack Yellow
+                    imageRes = com.aplikasi.fittrack.R.drawable.cihuy
                 )
                 BrowseCard(
                     title = "Upper Body",
                     subtitle = "18 Workouts Progress",
-                    backgroundColor = Color(0xFFCDB4F3) // Ungu Muda
+                    backgroundColor = Color(0xFFFFC107), // Amber Tegas
+                    imageRes = com.aplikasi.fittrack.R.drawable.high // 💡 Ganti dengan aset gambar ke-2 lu
                 )
                 BrowseCard(
                     title = "Lower Body",
                     subtitle = "15 Workouts Progress",
-                    backgroundColor = Color(0xFFF3B4D4) // Pink Muda
+                    backgroundColor = Color(0xFFFFA000), // Gold Sporty
+                    imageRes = com.aplikasi.fittrack.R.drawable.dash // 💡 Ganti dengan aset gambar ke-3 lu
                 )
             }
 
@@ -184,12 +189,9 @@ fun SearchScreen(
 }
 
 // --- KOMPONEN BANTUAN ---
-// (RecentSearchItem dan BrowseCard biarkan sama persis seperti kodingan asli lu)
 
-// Komponen baru untuk nampilin item hasil pencarian
 @Composable
 fun SearchResultItem(workout: WorkoutResponse, onClick: () -> Unit) {
-
     val categoryName = when (workout.category_id) {
         1 -> "Full Body"
         2 -> "Upper Body"
@@ -219,6 +221,7 @@ fun SearchResultItem(workout: WorkoutResponse, onClick: () -> Unit) {
         }
     }
 }
+
 @Composable
 fun RecentSearchItem(text: String) {
     Row(
@@ -236,14 +239,15 @@ fun RecentSearchItem(text: String) {
     }
 }
 
+// 🎯 UPGRADED BROWSE CARD: Menerima gambar dinamis & memotongnya jadi bulat sempurna
 @Composable
-fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
+fun BrowseCard(title: String, subtitle: String, backgroundColor: Color, imageRes: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
+            .height(115.dp) // Samakan tinggi dengan halaman kategori
             .padding(bottom = 16.dp)
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(22.dp)) // Samakan lekukan radius sudut
             .background(backgroundColor)
             .clickable { /* Aksi saat diklik */ }
     ) {
@@ -253,16 +257,26 @@ fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                Text(text = title, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF111111))
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = subtitle, fontSize = 12.sp, color = Color.DarkGray)
+                Text(text = subtitle, fontSize = 12.sp, color = Color(0xFF222222).copy(alpha = 0.8f))
             }
 
-            Image(
-                painter = painterResource(id = android.R.drawable.ic_menu_gallery),
-                contentDescription = title,
-                modifier = Modifier.size(100.dp)
-            )
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Kontainer Bulat Sempurna Anti-Bocor
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape)
+            ) {
+                Image(
+                    painter = painterResource(id = imageRes),
+                    contentDescription = title,
+                    contentScale = ContentScale.Crop, // 🎯 Memotong otomatis gambar apa pun menjadi bulat presisi
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
@@ -270,14 +284,10 @@ fun BrowseCard(title: String, subtitle: String, backgroundColor: Color) {
 @Preview(showBackground = true, device = "id:pixel_5")
 @Composable
 fun SearchScreenPreview() {
-    // Kamu bisa membungkusnya dengan Tema aplikasimu jika ada,
-    // misal: FitTrackTheme { ... }
     SearchScreen(
-        // 1. Tambahkan parameter viewModel yang diminta
         viewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
         onNavigateToProfile = {  },
         onNavigateToCategories = {  },
-        // 2. Tambahkan parameter onNavigateToDetail yang diminta
         onNavigateToDetail = {  }
     )
 }

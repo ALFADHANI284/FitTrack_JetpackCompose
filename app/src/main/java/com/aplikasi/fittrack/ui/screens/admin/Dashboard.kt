@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.sp
 fun AdminDashboardScreen(
     onNavigateToAddWorkout: () -> Unit,
     onNavigateToWorkoutList: () -> Unit,
+    onNavigateToSchedule: () -> Unit,
+    onNavigateToCategories: () -> Unit, // 🎯 TAMBAHAN PARAMETER BARU UNTUK KELAYAR CATEGORIES
     onLogout: () -> Unit
 ) {
     // 🟡 Warna Tema Utama Admin
@@ -136,7 +138,7 @@ fun AdminDashboardScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                 shape = RoundedCornerShape(14.dp),
                 border = BorderStroke(2.dp, primaryColor),
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -151,10 +153,52 @@ fun AdminDashboardScreen(
                 )
             }
 
+            // 📅 3. TOMBOL BARU: MENUJU KE SCHEDULE ACTIVITY
+            OutlinedButton(
+                onClick = { onNavigateToSchedule() }, // 🔒 LOGIKAA BARU UNTUK NAVIGASI JADWAL
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(2.dp, primaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = primaryColor,
+                    containerColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "📅  Lihat Jadwal Latihan (Schedule)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // 🗂️ 4. TOMBOL BARU: MENUJU KE CATEGORIES ACTIVITY
+            OutlinedButton(
+                onClick = { onNavigateToCategories() }, // 🔒 LOGIKAA BARU UNTUK NAVIGASI KATEGORI
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(bottom = 16.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(2.dp, primaryColor),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = primaryColor,
+                    containerColor = Color.White
+                )
+            ) {
+                Text(
+                    text = "🗂️  Lihat Kategori Latihan (Categories)",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             // Mendorong tombol logout tetap berada tepat di bagian paling bawah layar
             Spacer(modifier = Modifier.weight(1f))
 
-            // 3. TOMBOL LOGOUT (Dibuat melonjong menyerupai desain tombol logout user)
+            // 5. TOMBOL LOGOUT (Dibuat melonjong menyerupai desain tombol logout user)
             Button(
                 onClick = { onLogout() }, // 🔒 LOGIC TETAP SAMA
                 modifier = Modifier
@@ -180,5 +224,11 @@ fun AdminDashboardScreen(
 @Preview(showBackground = true)
 @Composable
 fun AdminDashboardPreview() {
-    AdminDashboardScreen(onNavigateToAddWorkout = {}, onLogout = {}, onNavigateToWorkoutList = {})
+    AdminDashboardScreen(
+        onNavigateToAddWorkout = {},
+        onLogout = {},
+        onNavigateToWorkoutList = {},
+        onNavigateToSchedule = {},
+        onNavigateToCategories = {} // Tambahan untuk preview
+    )
 }

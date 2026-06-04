@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale // 🎯 WAJIB UNTUK POTONG FOTO JADI BULAT
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -53,11 +54,19 @@ fun UserCategoryScreen(
     var categories by remember { mutableStateOf<List<CategoryResponse>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
-    // 🎨 Warna Kuning & Amber Bold yang tegas dan solid biar kontrasnya dapet
+    // 🎨 Warna Kuning & Amber Bold yang tegas
     val boldYellowColors = listOf(
-        Color(0xFFFFB200), // FitTrack Yellow Utama
-        Color(0xFFFFC107), // Amber Tegas
-        Color(0xFFFFA000)  // Gold Sporty
+        Color(0xFFFFB200),
+        Color(0xFFFFC107),
+        Color(0xFFFFA000)
+    )
+
+    // 📸 DAFTAR FOTO YANG BERBEDA-BEDA:
+    // Silakan ganti nama "cihuy", "gambar_upper", "gambar_lower" sesuai file asli yang ada di folder drawable lu!
+    val categoryImages = listOf(
+        com.aplikasi.fittrack.R.drawable.cihuy,         // Foto untuk kotak ke-1
+        com.aplikasi.fittrack.R.drawable.high,  // Foto untuk kotak ke-2
+        com.aplikasi.fittrack.R.drawable.dash   // Foto untuk kotak ke-3
     )
 
     LaunchedEffect(Unit) {
@@ -80,7 +89,7 @@ fun UserCategoryScreen(
             .background(Color.White)
             .padding(horizontal = 24.dp)
     ) {
-        // --- 🍃 HEADER KONSISTEN POLOS ---
+        // --- HEADER KONSISTEN POLOS ---
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
@@ -102,7 +111,7 @@ fun UserCategoryScreen(
             )
         }
 
-        // --- KONTEN LIST (Kembali ke baris penuh biar gak kosong pincang) ---
+        // --- KONTEN LIST ---
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = Color(0xFFFFB200), strokeWidth = 4.dp)
@@ -125,9 +134,13 @@ fun UserCategoryScreen(
                 itemsIndexed(categories) { index, category ->
                     val solidColor = boldYellowColors[index % boldYellowColors.size]
 
+                    // 🎯 Trik otomatis memilih foto berdasarkan urutan index data
+                    val imageRes = categoryImages[index % categoryImages.size]
+
                     UserCategoryCard(
                         category = category,
                         backgroundColor = solidColor,
+                        imageRes = imageRes, // 🎯 Oper gambarnya ke card
                         onClick = { onCategoryClick(category.id) }
                     )
                 }
@@ -136,17 +149,18 @@ fun UserCategoryScreen(
     }
 }
 
-// --- 🍃 SOLID BOLD ROW CARD DESIGN ---
+// --- 🍃 SOLID BOLD ROW CARD DESIGN WITH UNIQUE PHOTO ---
 @Composable
 fun UserCategoryCard(
     category: CategoryResponse,
     backgroundColor: Color,
+    imageRes: Int, // 🎯 Terima parameter gambar di sini
     onClick: () -> Unit
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(115.dp) // Ukuran proporsional, penuh ke kanan, anti-kopong
+            .height(115.dp)
             .clip(RoundedCornerShape(22.dp))
             .background(backgroundColor)
             .clickable { onClick() }
@@ -164,7 +178,7 @@ fun UserCategoryCard(
                     text = category.name,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF111111) // Hitam pekat mantap
+                    color = Color(0xFF111111)
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -172,7 +186,7 @@ fun UserCategoryCard(
                 Text(
                     text = category.description ?: "Start your training plan now",
                     fontSize = 12.sp,
-                    color = Color(0xFF222222).copy(alpha = 0.8f), // Teks deskripsi gelap tegas
+                    color = Color(0xFF222222).copy(alpha = 0.8f),
                     maxLines = 2,
                     lineHeight = 16.sp
                 )
@@ -180,20 +194,17 @@ fun UserCategoryCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Sisi Ikon Kanan (Bunderan Putih Bersih yang Tegas)
+            // Sisi Ikon Kanan (FOTO BULAT SEMPUNA DAN BEDA-BEDA)
             Box(
                 modifier = Modifier
-                    .size(130.dp) // 🎯 Box dinaikkan jadi 130.dp biar sama kayak gambar
+                    .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = com.aplikasi.fittrack.R.drawable.cihuy),
+                    painter = painterResource(id = imageRes), // 🎯 Gambar berubah dinamis sesuai index
                     contentDescription = category.name,
-                    modifier = Modifier
-                        .fillMaxSize() // 🎯 Mengisi full 130.dp area Box
-                        .clip(CircleShape) // 🎯 Ini yang motong gambarnya jadi bulat ngikutin Box
+                    contentScale = ContentScale.Crop, // Potong melingkar rapi
+                    modifier = Modifier.fillMaxSize()
                 )
             }
         }
