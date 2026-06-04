@@ -1,7 +1,10 @@
 package com.aplikasi.fittrack.ui.screens.workouts
 
+import android.annotation.SuppressLint
 import android.content.Context
+import android.os.Looper
 import android.view.ViewGroup
+import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -63,65 +66,44 @@ import android.graphics.Color as AndroidColor
 
 @Composable
 fun WorkoutDetailScreen(
-    workoutId: Int, // Menerima ID dari halaman sebelumnya
-    onNavigateBack: () -> Unit // Fungsi kembali
+    workoutId: Int,
+    onNavigateBack: () -> Unit
 ) {
     val yellowTheme = Color(0xFFFFB300)
-
     val context = LocalContext.current
-
     val apiService = RetrofitClient.instance
     val viewModel = remember { WorkoutDetailViewModel(apiService, context) }
 
-    // State untuk menampung 1 data detail saja (makanya pakai tanda tanya '?' / bisa null saat loading)
     var workoutDetail by remember { mutableStateOf<WorkoutResponse?>(null) }
     var isLoading by remember { mutableStateOf(true) }
-    // Ambil data waktu sekarang untuk default picker
+
+    // 💡 1. STATE RAHASIA BUAT MUNCULIN TOMBOL
+    var isVideoFinished by remember { mutableStateOf(false) }
+
     val calendar = Calendar.getInstance()
     val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
     val currentMinute = calendar.get(Calendar.MINUTE)
 
-    // Setup Dialog Jam bawaan Android
     val timePickerDialog = android.app.TimePickerDialog(
         context,
-        { _, hourOfDay, minute ->
-            // Ketika user klik "OK" di pop-up jam, tembak API!
-            viewModel.addWorkoutSchedule(workoutId, hourOfDay, minute)
-        },
-        currentHour,
-        currentMinute,
-        true // Menggunakan format 24 jam
+        { _, hourOfDay, minute -> viewModel.addWorkoutSchedule(workoutId, hourOfDay, minute) },
+        currentHour, currentMinute, true
     )
 
-    // Ambil data saat layar dibuka
     LaunchedEffect(workoutId) {
-        // 👇 1. KITA PRINT DULU ID-NYA BIAR TAU NYANGKUT ATAU NGGAK
-        println("DEBUG_DETAIL: ID Workout yang diklik = $workoutId")
-
         try {
-            // 👇 2. AMBIL TOKEN ASLI LAGI DARI BRANKAS
             val sharedPref = context.getSharedPreferences("FitTrackPrefs", Context.MODE_PRIVATE)
             val savedToken = sharedPref.getString("ACCESS_TOKEN", "") ?: ""
             val userToken = "Bearer $savedToken"
 
-            println("DEBUG_DETAIL: Token dipake = $userToken")
-
-            // Tembak API Get All Workouts
             val response = apiService.getWorkouts(userToken)
-
             if (response.status) {
-                // Cari HANYA 1 data yang ID-nya sama dengan workoutId yang diklik
                 val detail = response.data.find { it.id == workoutId }
                 workoutDetail = detail
-
-                // Set status tombol love
                 viewModel.setInitialFavoriteStatus(detail?.isFavorite ?: false)
-
-                println("DEBUG_DETAIL: Data ketemu = ${detail?.name}")
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            println("DEBUG_DETAIL: ERROR API -> ${e.message}")
         } finally {
             isLoading = false
         }
@@ -129,23 +111,17 @@ fun WorkoutDetailScreen(
 
     Scaffold(
         bottomBar = {
-            // Kita kirim link YT-nya ke bottom bar siapa tau mau dipakai
             WorkoutBottomBar(
                 workoutId = workoutDetail?.id ?: 0,
                 viewModel = viewModel,
                 themeColor = yellowTheme,
                 youtubeLink = workoutDetail?.link_yt,
-                onWatchTutorialClick = {
-                    timePickerDialog.show()
-                },
-                onViewScheduleClick = {
-                    timePickerDialog.show()
-                }
+                onWatchTutorialClick = { timePickerDialog.show() },
+                onViewScheduleClick = { timePickerDialog.show() }
             )
         },
         containerColor = Color.White
     ) { paddingValues ->
-
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = yellowTheme)
@@ -155,7 +131,6 @@ fun WorkoutDetailScreen(
                 Text("Data latihan tidak ditemukan", color = Color.Gray)
             }
         } else {
-            // Data berhasil didapat, mari kita ekstrak
             val detail = workoutDetail!!
 
             Column(
@@ -167,14 +142,18 @@ fun WorkoutDetailScreen(
                 // HEADER BOX
                 Box(modifier = Modifier.fillMaxWidth().height(350.dp).background(Color.Black)) {
 
-                    // Cek apakah ada link YouTube-nya
                     if (!detail.link_yt.isNullOrEmpty()) {
+
+                        // 💡 Panggil komponen WebView andalan lu, dan tangkap sinyal selesainya!
                         YoutubeVideoPlayer(
                             youtubeUrl = detail.link_yt,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onVideoEnded = {
+                                isVideoFinished = true // TOMBOL TRIGGERED CO! BOOM! 🚀
+                            }
                         )
+
                     } else {
-                        // Kalau nggak ada link, tampilkan gambar abu-abu statis
                         Image(
                             painter = painterResource(id = android.R.drawable.ic_menu_gallery),
                             contentDescription = "Workout Header",
@@ -183,7 +162,6 @@ fun WorkoutDetailScreen(
                         )
                     }
 
-                    // Tombol Back di Kiri Atas
                     IconButton(
                         onClick = onNavigateBack,
                         modifier = Modifier
@@ -196,30 +174,16 @@ fun WorkoutDetailScreen(
                 }
 
                 // BAGIAN KONTEN BAWAH
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(24.dp)
-                ) {
-                    // 1. Rating (Statis dulu karena belum ada di DB)
+                Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Star, contentDescription = "Rating", tint = yellowTheme, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("4.9", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     }
 
-                    // 2. Judul Program dari Database
-                    Text(
-                        text = detail.name,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(top = 8.dp)
-                    )
+                    Text(text = detail.name, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, color = Color.Black, modifier = Modifier.padding(top = 8.dp))
 
-                    // 3. Info Durasi & Kalori dari Database
-                    Row(
-                        modifier = Modifier.padding(top = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
+                    Row(modifier = Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Schedule, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(4.dp))
@@ -234,21 +198,31 @@ fun WorkoutDetailScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp), thickness = 1.dp, color = Color(0xFFE0E0E0))
 
-                    // 4. Deskripsi dari Database
-                    Text(
-                        text = "About The Program",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
+                    Text(text = "About The Program", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black, modifier = Modifier.padding(bottom = 12.dp))
+                    Text(text = detail.description ?: "Tidak ada deskripsi untuk latihan ini.", fontSize = 15.sp, color = Color(0xFF424242), lineHeight = 22.sp)
 
-                    Text(
-                        text = detail.description ?: "Tidak ada deskripsi untuk latihan ini.",
-                        fontSize = 15.sp,
-                        color = Color(0xFF424242),
-                        lineHeight = 22.sp
-                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    // 💡 3. TOMBOL AJAIB MUNCUL DI BAWAH SINI
+                    if (isVideoFinished) {
+                        Button(
+                            onClick = {
+                                // Tembak API dan simpan history!
+                                viewModel.finishWorkout(
+                                    workoutId = detail.id,
+                                    duration = detail.duration_minutes ?: 0,
+                                    calories = detail.calories_burned ?: 0
+                                )
+                                // Tendang balik ke Home biar bisa liat bar chart-nya naik
+                                onNavigateBack()
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = yellowTheme),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("Selesai & Simpan Progress", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -341,8 +315,13 @@ fun getYoutubeVideoId(url: String): String {
     }
 }
 
+@SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
 @Composable
-fun YoutubeVideoPlayer(youtubeUrl: String, modifier: Modifier = Modifier) {
+fun YoutubeVideoPlayer(
+    youtubeUrl: String,
+    modifier: Modifier = Modifier,
+    onVideoEnded: () -> Unit
+) {
     val videoId = getYoutubeVideoId(youtubeUrl)
 
     if (videoId.isEmpty()) {
@@ -356,7 +335,6 @@ fun YoutubeVideoPlayer(youtubeUrl: String, modifier: Modifier = Modifier) {
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
-                // Paksa WebView biar ukurannya memenuhi kotak header
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -367,27 +345,32 @@ fun YoutubeVideoPlayer(youtubeUrl: String, modifier: Modifier = Modifier) {
                 settings.useWideViewPort = true
                 settings.mediaPlaybackRequiresUserGesture = false
                 settings.domStorageEnabled = true
-
-                // Set background WebView jadi hitam agar pas loading ngga putih
                 setBackgroundColor(AndroidColor.BLACK)
 
-                // 👇 INI JANTUNGNYA "ULTRA CLEAN MODE" 👇
+                // 💡 2. INI JEMBATANNYA (ANDROID BRIDGE)
+                // Objek ini ngizinin Javascript di dalam WebView manggil fungsi Kotlin
+                addJavascriptInterface(object {
+                    @JavascriptInterface
+                    fun triggerEnded() {
+                        // Harus dilempar ke Main Thread biar UI Compose aman pas diubah
+                        android.os.Handler(Looper.getMainLooper()).post {
+                            onVideoEnded()
+                        }
+                    }
+                }, "AndroidBridge")
+
                 webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
 
-                        // Script ini akan berjalan terus menerus setiap 300 milidetik
-                        // untuk memastikan video selalu menutupi seluruh layar
                         val jsCode = """
                             javascript:(function() {
                                 function nukeUI() {
-                                    // 1. Sembunyikan elemen sampah yang sering ngalangin
                                     var garbage = document.querySelectorAll('ytm-mobile-topbar-renderer, ytm-single-column-watch-next-results-renderer, .ytp-chrome-top, .ytp-chrome-bottom, ytm-promoted-app-install-renderer');
                                     garbage.forEach(function(el) { 
                                         if(el) el.style.setProperty('display', 'none', 'important'); 
                                     });
 
-                                    // 2. Culik tag <video> aslinya dan paksa jadi Full Screen di atas segalanya
                                     var video = document.querySelector('video');
                                     if (video) {
                                         video.style.setProperty('position', 'fixed', 'important');
@@ -395,22 +378,25 @@ fun YoutubeVideoPlayer(youtubeUrl: String, modifier: Modifier = Modifier) {
                                         video.style.setProperty('left', '0', 'important');
                                         video.style.setProperty('width', '100vw', 'important');
                                         video.style.setProperty('height', '100vh', 'important');
-                                        video.style.setProperty('object-fit', 'contain', 'important'); // Biar rasio video tetep proporsional
+                                        video.style.setProperty('object-fit', 'contain', 'important');
                                         video.style.setProperty('z-index', '999999', 'important');
                                         video.style.setProperty('background', 'black', 'important');
+                                        
+                                        // 💡 3. SENSOR DETEKSI VIDEO TAMAT
+                                        if (!video.hasEndedListener) {
+                                            video.addEventListener('ended', function() {
+                                                // Kalau video kelar, panggil Jembatan Kotlin tadi!
+                                                AndroidBridge.triggerEnded(); 
+                                            });
+                                            video.hasEndedListener = true;
+                                        }
                                     }
                                 }
-
-                                // Eksekusi fungsi nukeUI setiap 300ms 
-                                // (Karena YouTube meload UI secara bertahap)
                                 setInterval(nukeUI, 300);
-                                
-                                // Paksa body background jadi hitam
                                 document.body.style.setProperty('background', 'black', 'important');
                             })();
                         """.trimIndent()
 
-                        // Tembakkan script ke WebView
                         view?.evaluateJavascript(jsCode, null)
                     }
                 }
