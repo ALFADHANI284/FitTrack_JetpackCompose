@@ -63,4 +63,5 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.2")
     implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.1")
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }

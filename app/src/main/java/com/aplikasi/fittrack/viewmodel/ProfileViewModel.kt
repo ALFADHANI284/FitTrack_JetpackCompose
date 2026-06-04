@@ -8,6 +8,7 @@ import com.aplikasi.fittrack.model.UserData
 import com.aplikasi.fittrack.network.ApiService
 import kotlinx.coroutines.launch
 import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.io.File
@@ -73,7 +74,7 @@ class ProfileViewModel(
 
             try {
                 // 1. Definisikan tipe file pakai cara klasik yang lebih aman
-                val mediaType = MediaType.parse("image/jpeg")
+                val mediaType = "image/jpeg".toMediaTypeOrNull()
 
                 // 2. Ubah file jadi RequestBody
                 val requestFile = RequestBody.create(mediaType, fileGambar)

@@ -20,6 +20,10 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.DirectionsRun
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -40,10 +44,25 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
+import coil.compose.AsyncImage
 import com.aplikasi.fittrack.model.AiChatMessage
 import com.aplikasi.fittrack.model.AiChatRequest
 import com.aplikasi.fittrack.network.RetrofitClient
@@ -180,7 +199,11 @@ fun FitAiChatSheet(
                                     if (response.status) {
                                         // Update UI dengan pesan asli dari DB + Balasan AI
                                         // Kita hapus pesan sementara tadi, ganti dengan yang dari server
-                                        chatMessages = chatMessages.dropLast(1) + response.data.user_message + response.data.ai_reply
+                                        val aiReply = response.data.ai_reply.copy(
+                                            youtube_results = response.data.youtube_results,
+                                            maps_result = response.data.maps_result
+                                        )
+                                        chatMessages = chatMessages.dropLast(1) + response.data.user_message + aiReply
                                     }
                                 } catch (e: Exception) {
                                     android.util.Log.e("FITAI_ERROR", "Gagal manggil AI: ${e.message}")
@@ -203,9 +226,9 @@ fun FitAiChatSheet(
 fun ChatBubble(chat: AiChatMessage) {
     val isUser = chat.role == "user"
 
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
     ) {
         Box(
             modifier = Modifier
@@ -222,10 +245,283 @@ fun ChatBubble(chat: AiChatMessage) {
                 .padding(12.dp)
         ) {
             Text(
-                text = chat.message,
+                text = if (isUser) androidx.compose.ui.text.AnnotatedString(chat.message) else parseMarkdownToAnnotatedString(chat.message),
                 color = if (isUser) Color.White else Color.Black,
-                fontSize = 15.sp
+                fontSize = 15.sp,
+                lineHeight = 22.sp
             )
+        }
+        
+        if (!isUser && !chat.youtube_results.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "📺 Rekomendasi Video",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 12.dp) // extra padding for shadow
+            ) {
+                items(chat.youtube_results) { video ->
+                    YoutubeRecommendationItem(video)
+                }
+            }
+        }
+
+        if (!isUser && !chat.maps_result.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "📍 Rekomendasi Lokasi Gym",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
+                contentPadding = PaddingValues(start = 4.dp, end = 4.dp, bottom = 12.dp)
+            ) {
+                items(chat.maps_result) { mapResult ->
+                    MapsRecommendationItem(mapResult)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun YoutubeRecommendationItem(video: com.aplikasi.fittrack.model.YoutubeResult) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .width(190.dp) // Lebih kecil agar tidak terlalu memakan tempat
+            .padding(bottom = 6.dp)
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color.Black.copy(alpha = 0.15f),
+                ambientColor = Color.Black.copy(alpha = 0.1f)
+            )
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(video.url))
+                context.startActivity(intent)
+            }
+    ) {
+        // Thumbnail Container
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            AsyncImage(
+                model = video.thumbnail,
+                contentDescription = video.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Dark gradient overlay from bottom to make play button pop
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
+                            startY = 50f
+                        )
+                    )
+            )
+            // Premium Play Button (Red Youtube Style)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color(0xFFE52D27), CircleShape)
+                    .border(2.dp, Color.White.copy(alpha = 0.9f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "Play",
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp).padding(start = 2.dp) // visual center
+                )
+            }
+        }
+        
+        // Text Information
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp)
+        ) {
+            Text(
+                text = video.title,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1F1F1F),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 17.sp
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .background(Color(0xFFF0F0F0), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Channel",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(12.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = video.channel,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
+}
+
+fun parseMarkdownToAnnotatedString(text: String): androidx.compose.ui.text.AnnotatedString {
+    return androidx.compose.ui.text.buildAnnotatedString {
+        val lines = text.split("\n")
+        for ((index, line) in lines.withIndex()) {
+            var currentLine = line
+            
+            // Check for headers
+            val isHeader = currentLine.startsWith("#")
+            
+            if (isHeader) {
+                currentLine = currentLine.trimStart('#').trimStart()
+                pushStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold, fontSize = 17.sp))
+            } else if (currentLine.trimStart().startsWith("- ") || currentLine.trimStart().startsWith("* ")) {
+                val indent = currentLine.takeWhile { it.isWhitespace() }
+                currentLine = currentLine.trimStart().substring(2)
+                append(indent)
+                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append("• ")
+                }
+            }
+            
+            // Parse bold inside the line
+            val boldRegex = Regex("\\*\\*(.*?)\\*\\*")
+            var currentIndex = 0
+            val matches = boldRegex.findAll(currentLine)
+            
+            for (match in matches) {
+                val start = match.range.first
+                val end = match.range.last + 1
+                
+                if (start > currentIndex) {
+                    append(currentLine.substring(currentIndex, start))
+                }
+                
+                withStyle(androidx.compose.ui.text.SpanStyle(fontWeight = FontWeight.Bold)) {
+                    append(match.groupValues[1])
+                }
+                currentIndex = end
+            }
+            
+            if (currentIndex < currentLine.length) {
+                append(currentLine.substring(currentIndex))
+            }
+            
+            if (isHeader) {
+                pop()
+            }
+            
+            if (index < lines.size - 1) {
+                append("\n")
+            }
+        }
+    }
+}
+
+@Composable
+fun MapsRecommendationItem(mapResult: com.aplikasi.fittrack.model.MapsResult) {
+    val context = LocalContext.current
+    Column(
+        modifier = Modifier
+            .width(190.dp)
+            .padding(bottom = 6.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = Color.Black.copy(alpha = 0.15f),
+                ambientColor = Color.Black.copy(alpha = 0.1f)
+            )
+            .background(Color.White, RoundedCornerShape(16.dp))
+            .clickable {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(mapResult.google_search_url))
+                context.startActivity(intent)
+            }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+        ) {
+            // Menggunakan Yandex Static Maps karena lebih reliable dan tidak memerlukan API key/User-Agent khusus
+            val staticMapUrl = "https://static-maps.yandex.ru/1.x/?ll=${mapResult.location.lng},${mapResult.location.lat}&z=16&l=map&size=400,200&lang=en_US"
+            
+            coil.compose.AsyncImage(
+                model = staticMapUrl,
+                contentDescription = "Map for ${mapResult.name}",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+            // Pin icon in center
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = Color(0xFFE52D27),
+                    modifier = Modifier.size(36.dp).padding(bottom = 14.dp) // center pin bottom tip
+                )
+            }
+        }
+        
+        Column(modifier = Modifier.padding(10.dp)) {
+            Text(
+                text = mapResult.name,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color(0xFF1F1F1F),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 17.sp
+            )
+            if (!mapResult.address.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = mapResult.address,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Gray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    lineHeight = 15.sp
+                )
+            }
         }
     }
 }
