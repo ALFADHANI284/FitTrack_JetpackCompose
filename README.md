@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏃‍♂️ FitTrack
+# FitTrack
 **Intelligent Fitness Management System & Backend API**
 
 *Penilaian Sumatif Akhir Semester (PSAS) | SMK Telkom Purwokerto | 2026/2027*
